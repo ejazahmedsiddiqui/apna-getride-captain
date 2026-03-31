@@ -3,14 +3,13 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {useNavigation} from "@react-navigation/native";
+import {SafeAreaView} from "react-native-safe-area-context";
 import RenderFormField from "../../components/RenderFormField";
 import {useCallback, useState} from "react";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-
+import {MaterialCommunityIcons} from "@expo/vector-icons";
+import {LucideMail} from 'lucide-react-native'
 function LoginScreen() {
     const navigation = useNavigation();
     const [email, setEmail] = useState("");
@@ -37,31 +36,39 @@ function LoginScreen() {
 
                 {/* Social Buttons */}
                 <View style={styles.socialRow}>
-                    <TouchableOpacity style={styles.socialButton}>
-                        <MaterialCommunityIcons name="google" size={20} color="#1a1a2e" />
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        accessible={true}
+                        accessibilityLabel={'Sign-in with Google'}
+                    >
+                        <MaterialCommunityIcons name="google" size={20} color="#1a1a2e"/>
                         <Text style={styles.socialButtonText}>Google</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.socialButton}>
-                        <MaterialCommunityIcons name="apple" size={20} color="#1a1a2e" />
+                    <TouchableOpacity
+                        style={styles.socialButton}
+                        accessible={true}
+                        accessibilityLabel={'Sign-in with Apple'}
+                    >
+                        <LucideMail size={20} color="#1a1a2e"/>
                         <Text style={styles.socialButtonText}>Apple</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Divider */}
                 <View style={styles.dividerRow}>
-                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerLine}/>
                     <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerLine}/>
                 </View>
 
                 {/* Email Field */}
                 <RenderFormField
                     value={email}
                     onChangeText={setEmail}
-                    label="EMAIL OR PHONE"
-                    placeholder="youremail@gmail.com / 9078563412"
-                    keyboardType="email-address"
+                    label="PHONE"
+                    placeholder="Your 10-digit phone number"
+                    keyboardType="numeric"
                     autoCapitalize="none"
                     labelColor="#6B7280"
                     labelColorActive="#1a1a2e"
@@ -70,19 +77,20 @@ function LoginScreen() {
                     textColor="#111827"
                     placeholderTextColor="#9CA3AF"
                     icon={
-                        <MaterialCommunityIcons
-                            name="email-outline"
+                        <LucideMail
                             size={20}
-                            color="#9CA3AF"
+                            color="#1a1a2e"
                         />
                     }
                     style={styles.fieldSpacing}
+                    accessibilityLabel={'Input your 10-digit phone number here'}
+                    maxLength={10}
                 />
 
                 {/* Password Field with Forgot label */}
                 <View style={styles.passwordBlock}>
                     <View style={styles.passwordLabelRow}>
-                        <Text style={styles.passwordLabel}>PASSWORD</Text>
+                        <Text style={styles.passwordLabel}>OTP</Text>
                         <TouchableOpacity>
                             <Text style={styles.forgotText}>FORGOT?</Text>
                         </TouchableOpacity>
@@ -91,7 +99,7 @@ function LoginScreen() {
                         value={password}
                         onChangeText={setPassword}
                         placeholder="••••••••"
-                        keyboardType="default"
+                        keyboardType="numeric"
                         autoCapitalize="none"
                         secureTextEntry={true}
                         borderColorInactive="#E5E7EB"
@@ -105,6 +113,8 @@ function LoginScreen() {
                                 color="#9CA3AF"
                             />
                         }
+                        accessibilityLabel={'Input your 6-digit OTP78 here'}
+                        maxLength={6}
                     />
                 </View>
 

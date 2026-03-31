@@ -1,5 +1,5 @@
 import {StyleSheet, Text, View, TextInput, TouchableOpacity} from 'react-native';
-import React, { useState} from 'react';
+import React, {useState} from 'react';
 import {MaterialCommunityIcons} from "@expo/vector-icons";
 
 type InputType = 'default' | 'numeric' | 'alphabetic' | 'alphanumeric' | 'pincode' | 'phone' | 'aadhaar';
@@ -26,7 +26,8 @@ interface RenderFormFieldProps {
     icon?: React.ReactElement<{ color?: string }> | null;
     maxLength?: number | null;
     inputType?: InputType;
-    onFocusFn?: () => void
+    onFocusFn?: () => void;
+    accessibilityLabel?: string;
 }
 
 const RenderFormField = ({
@@ -52,6 +53,7 @@ const RenderFormField = ({
                              maxLength = null,
                              inputType = 'default',
                              onFocusFn = () => null,
+                             accessibilityLabel = 'This is an input field'
                          }: RenderFormFieldProps) => {
     const [focussed, setFocussed] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -114,10 +116,12 @@ const RenderFormField = ({
 
     return (
         <View style={styles.container}>
-            <View style={[styles.formField, style]}>
+            <View style={[styles.formField, style]}
+                  accessible={true}
+                  accessibilityLabel={accessibilityLabel}>
                 {label && (
                     <View style={styles.inputHeader}>
-                        <Text style={[styles.inputHeading, {color: activeLabelColor}]}>
+                        <Text style={[styles.inputHeading, {color: activeLabelColor}]} accessibilityLabel={label}>
                             {label}
                             {maxLength && value && (
                                 <Text style={styles.charCount}> ({value.length}/{maxLength})</Text>
@@ -140,7 +144,7 @@ const RenderFormField = ({
                                 inputStyle,
                                 {color: textColor},
                                 icon && styles.inputWithIcon,
-                                {borderColor: focussed ? borderColorActive : borderColorInactive },
+                                {borderColor: focussed ? borderColorActive : borderColorInactive},
                             ]}
                             value={value}
                             onChangeText={handleTextChange}
@@ -156,6 +160,8 @@ const RenderFormField = ({
                             }}
                             onBlur={() => setFocussed(false)}
                             maxLength={maxLength ?? undefined}
+                            accessible={true}
+                            accessibilityLabel={accessibilityLabel}
                         />
                         {secureTextEntry && (
                             <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeIconContainer}>

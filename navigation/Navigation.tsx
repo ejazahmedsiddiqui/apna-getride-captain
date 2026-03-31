@@ -3,7 +3,8 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import HomeScreen from "./screens/Home";
 import SettingsScreen from "./screens/Settings";
 import LoginScreen from "./auth/Login";
-
+import ProfileScreen from "./profile/Profile";
+import Layout from '../components/Layout'
 const isUserLoggedIn = () => {
     return false
 }
@@ -15,22 +16,17 @@ const RootStack = createNativeStackNavigator({
     initialRouteName: 'Login',
     screenOptions: {
         headerShown: false,
+        contentStyle: { flex: 1 },
     },
     groups: {
         // User screens
         User: {
-            // if: isUserLoggedIn,
-            screenOptions: {
-                headerShown: false,
-            },
             screens: {
                 Home: {
-                    screen: HomeScreen,
-                    options: {
-                        title: 'Overview',
-                    },
+                    screen: (props) => <Layout><HomeScreen {...props} /></Layout>,
                 },
-                Settings: SettingsScreen,
+                Settings: (props) => <Layout><SettingsScreen {...props} /></Layout>,
+                Profile: (props) => <Layout><ProfileScreen {...props} /></Layout>,
             },
         },
         // Auth screens
