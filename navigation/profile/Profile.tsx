@@ -1,4 +1,4 @@
-import React, {JSX} from "react";
+import React, {useState} from "react";
 import {
     View,
     Text,
@@ -8,20 +8,91 @@ import {
     StatusBar,
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
-import { User,CreditCard, RefreshCcw, Star, TicketPercent, IndianRupee, ShieldPlus, MessageCircleQuestionMark, Settings, BellRing } from 'lucide-react-native'
+import {
+    User,
+    CreditCard,
+    RefreshCcw,
+    Star,
+    TicketPercent,
+    ShieldPlus,
+    MessageCircleQuestionMark,
+    Settings,
+    BellRing
+} from 'lucide-react-native';
+import Animated, {
+    withTiming,
+    useSharedValue,
+    useAnimatedStyle,
+    interpolateColor,
+    interpolate,
+    Easing,
+} from "react-native-reanimated";
+
 const NAVY = "#000066";
 const GREEN = "#006E1C";
+const RED = "#FF0000";
+
+const userProfile = {
+    name: 'Champ Champaign Mohandas Karaganda Gandhi',
+    tier: 'elite',
+    membershipStatus: 'gold',
+    rating: 4.98,
+    totalTrips: 1284,
+    yearsActive: 3.2,
+    onlineStatus: true,
+}
 
 function ProfileScreen() {
+    const name = userProfile.name.length > 15 ? userProfile.name.slice(0, 15) + '...' : userProfile.name;
+    const [isOnline, setIsOnline] = useState<boolean>(userProfile?.onlineStatus ?? false);
+
+    // 0 = offline, 1 = online
+    const progress = useSharedValue(userProfile?.onlineStatus ? 1 : 0);
+    // Accumulates so each toggle adds 180deg
+    const rotation = useSharedValue(0);
+
+    const handleToggle = () => {
+        const next = !isOnline;
+        setIsOnline(next);
+        progress.value = withTiming(next ? 1 : 0, {
+            duration: 400,
+            easing: Easing.out(Easing.cubic),
+        });
+        rotation.value = withTiming(rotation.value - 180, {
+            duration: 800,
+            easing: Easing.inOut(Easing.cubic),
+        });
+    };
+
+    const animatedBannerStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            progress.value,
+            [0, 1],
+            [NAVY + 'AA', NAVY],
+        ),
+    }));
+
+    const animatedBtnStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            progress.value,
+            [0, 1],
+            [GREEN, RED],
+        ),
+    }));
+
+    const animatedIconStyle = useAnimatedStyle(() => ({
+        transform: [{rotate: `${rotation.value}deg`}],
+    }));
+
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+            <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
 
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.avatarCircle}>
-                        <User size={22} color={NAVY} />
+                        <User size={22} color={NAVY}/>
                     </View>
                     <Text style={styles.brandName}>Fluid Authority</Text>
                 </View>
@@ -39,52 +110,75 @@ function ProfileScreen() {
                 <View style={styles.profileCard}>
                     <View style={styles.profileCardTop}>
                         <View>
-                            <Text style={styles.eliteLabel}>ELITE MEMBER</Text>
-                            <Text style={styles.userName}>Alex Morgan</Text>
+                            <Text style={styles.eliteLabel}>
+                                {userProfile.tier.toUpperCase()} MEMBER
+                            </Text>
+
+                            <Text style={styles.userName}>
+                                {name}
+                            </Text>
+
                             <View style={styles.ratingRow}>
                                 <Star size={16} fill={'gold'} color={'gold'}/>
-                                <Text style={styles.ratingText}>4.98 Rating</Text>
+                                <Text style={styles.ratingText}>
+                                    {userProfile.rating} Rating
+                                </Text>
                             </View>
                         </View>
+
                         <View style={styles.goldBadge}>
-                            <Text style={styles.goldText}>GOLD</Text>
+                            <Text style={styles.goldText}>
+                                {userProfile.membershipStatus.toUpperCase()}
+                            </Text>
                         </View>
                     </View>
 
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>1,284</Text>
+                            <Text style={styles.statValue}>
+                                {userProfile.totalTrips.toLocaleString()}
+                            </Text>
                             <Text style={styles.statLabel}>TOTAL TRIPS</Text>
                         </View>
-                        <View style={styles.statDivider} />
+
+                        <View style={styles.statDivider}/>
+
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>3.2</Text>
+                            <Text style={styles.statValue}>
+                                {userProfile.yearsActive}
+                            </Text>
                             <Text style={styles.statLabel}>YEARS ACTIVE</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Switch to Driver Banner */}
-                <View style={styles.driverBanner}>
+                <Animated.View style={[styles.driverBanner, animatedBannerStyle]}>
                     <View style={styles.switchIconCircle}>
-                        <RefreshCcw size={22} color={'#fff'}/>
+                        <TouchableOpacity onPress={handleToggle}>
+                            <Animated.View style={animatedIconStyle}>
+                                <RefreshCcw size={22} color={'#fff'}/>
+                            </Animated.View>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.switchTitle}>Switch to Driver</Text>
-                    <Text style={styles.switchSubtitle}>Manage your earnings and trips</Text>
-                    <TouchableOpacity style={styles.goOnlineBtn} activeOpacity={0.85}>
-                        <Text style={styles.goOnlineText}>GO ONLINE</Text>
+                    <Text style={styles.switchTitle}>Switch to {isOnline ? 'Offline' : 'Online'}</Text>
+                    <Text style={styles.switchSubtitle}>{isOnline ? 'You will not receive rides after going offline' : 'Go online to start earning'}</Text>
+                    <TouchableOpacity activeOpacity={0.85} onPress={handleToggle}>
+                        <Animated.View style={[styles.goOnlineBtn, animatedBtnStyle]}>
+                            <Text style={styles.goOnlineText}>GO {isOnline ? 'OFFLINE' : 'ONLINE'}</Text>
+                        </Animated.View>
                     </TouchableOpacity>
-                </View>
+                </Animated.View>
 
                 {/* Account Settings */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account Settings</Text>
                     <View style={styles.menuGroup}>
-                        <MenuItem icon={<User size={22} color={NAVY} />} label="Personal Information" />
-                        <View style={styles.menuDivider} />
-                        <MenuItem icon={<CreditCard size={22} color={NAVY} />} label="Payment Methods" />
-                        <View style={styles.menuDivider} />
-                        <MenuItem icon={<TicketPercent size={22} color={NAVY} />} label="Promotions" badge={2} />
+                        <MenuItem icon={<User size={22} color={NAVY}/>} label="Personal Information"/>
+                        <View style={styles.menuDivider}/>
+                        <MenuItem icon={<CreditCard size={22} color={NAVY}/>} label="Payment Methods"/>
+                        <View style={styles.menuDivider}/>
+                        <MenuItem icon={<TicketPercent size={22} color={NAVY}/>} label="Promotions" badge={2}/>
                     </View>
                 </View>
 
@@ -92,11 +186,11 @@ function ProfileScreen() {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Security &amp; Help</Text>
                     <View style={styles.menuGroup}>
-                        <MenuItem icon={<ShieldPlus size={22} color={NAVY} />} label="Safety Center" />
-                        <View style={styles.menuDivider} />
-                        <MenuItem icon={<MessageCircleQuestionMark size={22} color={NAVY} />} label="Support" />
-                        <View style={styles.menuDivider} />
-                        <MenuItem icon={<Settings size={22} color={NAVY} />} label="Settings" />
+                        <MenuItem icon={<ShieldPlus size={22} color={NAVY}/>} label="Safety Center"/>
+                        <View style={styles.menuDivider}/>
+                        <MenuItem icon={<MessageCircleQuestionMark size={22} color={NAVY}/>} label="Support"/>
+                        <View style={styles.menuDivider}/>
+                        <MenuItem icon={<Settings size={22} color={NAVY}/>} label="Settings"/>
                     </View>
                 </View>
 
@@ -113,7 +207,7 @@ function ProfileScreen() {
                         <TouchableOpacity>
                             <Text style={styles.footerLink}>Privacy Policy</Text>
                         </TouchableOpacity>
-                        <Text style={styles.footerSep}>  </Text>
+                        <Text style={styles.footerSep}> </Text>
                         <TouchableOpacity>
                             <Text style={styles.footerLink}>Terms of Service</Text>
                         </TouchableOpacity>
@@ -286,7 +380,7 @@ const styles = StyleSheet.create({
 
     // Driver Banner
     driverBanner: {
-        backgroundColor: NAVY,
+
         borderRadius: 16,
         padding: 24,
         alignItems: "center",
@@ -316,7 +410,6 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     goOnlineBtn: {
-        backgroundColor: GREEN,
         borderRadius: 10,
         paddingVertical: 14,
         paddingHorizontal: 32,
@@ -356,7 +449,7 @@ const styles = StyleSheet.create({
     menuDivider: {
         height: 1,
         backgroundColor: "rgba(214,214,214,0.7)",
-        marginHorizontal: 56/2,
+        marginHorizontal: 56 / 2,
     },
     menuIconBox: {
         width: 36,
