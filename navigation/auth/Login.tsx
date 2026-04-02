@@ -2,23 +2,146 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
+    TouchableOpacity, ActivityIndicator, Alert,
 } from "react-native";
 import {useNavigation} from "@react-navigation/native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import RenderFormField from "../../components/RenderFormField";
-import {useCallback, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {MaterialCommunityIcons} from "@expo/vector-icons";
-import {LucideMail} from 'lucide-react-native'
+import {LucideMail} from 'lucide-react-native';
+import {useOtpLogin} from "../../hooks/useSendOtp";
+import {COLORS} from "../../utils/COLORS";
+import {Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
+
+const useCardFlip = () => {
+    const flip1 = useSharedValue(0);
+    const flip2 = useSharedValue(0);
+
+    const flipTo = (page: 0 | 1 | 2) => {
+        const cfg = {duration: 700, easing: Easing.bezier(0.4, 0, 0.2, 1)};
+        if (page === 0) {
+            flip1.value = withTiming(0, cfg);
+            flip2.value = withTiming(0, cfg);
+        } else if (page === 1) {
+            flip1.value = withTiming(1, cfg);
+            flip2.value = withTiming(0, cfg);
+        } else {
+            flip1.value = withTiming(1, cfg);
+            flip2.value = withTiming(1, cfg);
+        }
+    };
+
+    return {flip1, flip2, flipTo};
+};
+
 function LoginScreen() {
     const navigation = useNavigation();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [resendTimer, setResendTimer] = useState(0);
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [otp, setOtp] = useState("");
+    const {data, loading, error, getOtp, verifyOtp} = useOtpLogin();
+    const [step, setStep] = useState(1);
+    const progress = useSharedValue(0);
 
-    const handleLogin = useCallback(() => {
-        if (!email || !password) return
-        navigation.navigate("Home")
-    }, [email, password]);
+    const {flip1, flip2, flipTo} = useCardFlip();
+
+    useEffect(() => {
+        let interval: any = 0;
+        if (resendTimer > 0) {
+            interval = setInterval(() => setResendTimer((p) => p - 1), 1000);
+        }
+        return () => clearInterval(interval);
+    }, [resendTimer]);
+
+    const handleLogin = useCallback(async () => {
+        step === 1
+            ? await getOtp(phoneNumber)
+                .then(() => {
+                    if (data?.success) {
+                        console.log('Data fetched is: ', data)
+                        setStep(2);
+                        progress.value = withTiming(1, {
+                            duration: 400,
+                            easing: Easing.bezier(0.4, 0, 0.2, 1),
+                        });
+                    } else {
+                        console.log('Data fetched is Error: ', data?.success)
+                        setStep(1);
+                        Alert.alert('Error', error?.message || data?.message || 'An Error occurred.');
+                        progress.value = withTiming(progress.value === 1 ? 0 : 0, {
+                            duration: 400,
+                            easing: Easing.bezier(0.4, 0, 0.2, 1),
+                        });
+                    }
+                })
+            : verifyOtp(otp)
+                .then(() => {
+                    console.log('OTP verification called.');
+                    navigation.navigate("Home")
+                })
+    }, [phoneNumber, otp, step]);
+
+    const handleLoginButtonPress = async () => {
+        switch (step) {
+            case 0:
+                if (phoneNumber.length !== 10) return;
+                await getOtp(phoneNumber)
+                    .then(() => {
+                        if (data?.success) {
+                            setStep(2);
+                            flipTo(1)
+                        } else {
+                            console.log('Data fetched is Error: ', data?.success)
+                            setStep(1);
+                            flipTo(0)
+                            Alert.alert('Error', error?.message || data?.message || 'An Error occurred.');
+                        }
+                    })
+                break;
+            case 1:
+                if (otp.length !== 6) return;
+                flipTo(2);
+                await verifyOtp(otp)
+                    .then(() => {
+                        if (!data?.success) {
+                            Alert.alert('Error', error?.message || 'An error occurred: ' + error?.message);
+                            flipTo(1);
+                            setStep(1);
+                        } else {
+                            navigation.navigate('Home');
+                        }
+                    })
+                break;
+
+            default:
+                setStep(0);
+                flipTo(0);
+                break;
+        }
+    };
+
+    const disabled = (step === 1 ? phoneNumber.length !== 10 : otp.length !== 6)
+    const phoneStyle = useAnimatedStyle(() => ({
+        transform: [
+            {perspective: 900},
+            {rotateX: `${interpolate(flip1.value, [0, 1], [0, 180])}deg`},
+        ],
+        pointerEvents: flip1.value > 0.5 ? 'none' : 'auto',
+    }));
+
+    const otpStyle = useAnimatedStyle(() => ({
+        transform: [
+            {perspective: 900},
+            {
+                rotateX: `${
+                    interpolate(flip1.value, [0, 1], [180, 360]) +
+                    interpolate(flip2.value, [0, 1], [0, 180])
+                }deg`,
+            },
+        ],
+        pointerEvents: flip1.value < 0.5 || flip2.value > 0.5 ? 'none' : 'auto',
+    }));
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.inner}>
@@ -64,8 +187,8 @@ function LoginScreen() {
 
                 {/* Email Field */}
                 <RenderFormField
-                    value={email}
-                    onChangeText={setEmail}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
                     label="PHONE"
                     placeholder="Your 10-digit phone number"
                     keyboardType="numeric"
@@ -85,6 +208,8 @@ function LoginScreen() {
                     style={styles.fieldSpacing}
                     accessibilityLabel={'Input your 10-digit phone number here'}
                     maxLength={10}
+                    inputType={'phone'}
+                    editable={step === 1}
                 />
 
                 {/* Password Field with Forgot label */}
@@ -96,8 +221,8 @@ function LoginScreen() {
                         </TouchableOpacity>
                     </View>
                     <RenderFormField
-                        value={password}
-                        onChangeText={setPassword}
+                        value={otp}
+                        onChangeText={setOtp}
                         placeholder="••••••••"
                         keyboardType="numeric"
                         autoCapitalize="none"
@@ -115,16 +240,44 @@ function LoginScreen() {
                         }
                         accessibilityLabel={'Input your 6-digit OTP78 here'}
                         maxLength={6}
+                        editable={step === 2}
                     />
                 </View>
 
                 {/* Login Button */}
                 <TouchableOpacity
-                    style={styles.loginButton}
+                    style={[styles.loginButton,
+                        (disabled || loading) && {backgroundColor: COLORS.surfaceContainerHighest}]}
                     onPress={handleLogin}
+                    disabled={disabled || loading}
                 >
-                    <Text style={styles.loginButtonText}>Log In</Text>
+                    <Text style={styles.loginButtonText}>
+                        {error ? error.message : loading
+                            ? <ActivityIndicator size={16} color={COLORS.secondary}/>
+                            : step === 1
+                                ? 'Get OTP'
+                                : `${otp.length !== 6
+                                    ? 'Enter 6-digit OTP'
+                                    : 'Verify OTP'}`
+                        }
+                    </Text>
                 </TouchableOpacity>
+                {step === 2 && <View style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                }}>
+                    <TouchableOpacity onPress={() => setStep(1)}>
+                        <Text style={{
+                            fontSize: 12,
+                            color: 'blue'
+                        }}>Change Phone Number?</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity>
+                        <Text>Resend OTP</Text>
+                    </TouchableOpacity>
+
+                </View>}
                 <TouchableOpacity
                     style={styles.loginButton}
                     onPress={() => navigation.navigate('Home')}
@@ -137,7 +290,12 @@ function LoginScreen() {
                 >
                     <Text style={styles.loginButtonText}>Go To Settings</Text>
                 </TouchableOpacity>
-
+                <TouchableOpacity
+                    style={styles.loginButton}
+                    onPress={() => navigation.navigate('Kyc')}
+                >
+                    <Text style={styles.loginButtonText}>Go To KYC page</Text>
+                </TouchableOpacity>
 
             </View>
         </SafeAreaView>
@@ -247,7 +405,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",
-        marginBottom: 32,
+        marginVertical: 4,
     },
     loginButtonText: {
         fontSize: 16,

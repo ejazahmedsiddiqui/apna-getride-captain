@@ -21,9 +21,9 @@ interface NavLink {
     route: RouteName;  // was: string
 }
 
-interface FooterProps {
-    blurTargetRef: RefObject<View>;
-}
+type FooterProps = {
+    blurTargetRef: React.RefObject<View | null>;
+};
 
 interface ThemeColors {
     text: string;
