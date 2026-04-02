@@ -24,11 +24,12 @@ import Animated, {
     useSharedValue,
     useAnimatedStyle,
     interpolateColor,
-    interpolate,
     Easing,
 } from "react-native-reanimated";
+import {EaseView} from 'react-native-ease';
+import {COLORS} from '../../utils/COLORS'
 
-const NAVY = "#000066";
+
 const GREEN = "#006E1C";
 const RED = "#FF0000";
 
@@ -40,15 +41,29 @@ const userProfile = {
     totalTrips: 1284,
     yearsActive: 3.2,
     onlineStatus: true,
+};
+
+interface FadeCardProps {
+    children: React.ReactNode;
+}
+
+function FadeCard({children}: FadeCardProps) {
+    return (
+        <EaseView
+            initialAnimate={{opacity: 0, translateY: 50}}
+            animate={{opacity: 1, translateY: 0}}
+            transition={{type: 'timing', duration: 800}}
+            style={{flex: 1}}
+        >
+            {children}
+        </EaseView>
+    );
 }
 
 function ProfileScreen() {
     const name = userProfile.name.length > 15 ? userProfile.name.slice(0, 15) + '...' : userProfile.name;
     const [isOnline, setIsOnline] = useState<boolean>(userProfile?.onlineStatus ?? false);
-
-    // 0 = offline, 1 = online
     const progress = useSharedValue(userProfile?.onlineStatus ? 1 : 0);
-    // Accumulates so each toggle adds 180deg
     const rotation = useSharedValue(0);
 
     const handleToggle = () => {
@@ -68,7 +83,7 @@ function ProfileScreen() {
         backgroundColor: interpolateColor(
             progress.value,
             [0, 1],
-            [NAVY + 'AA', NAVY],
+            [ COLORS.primaryContainer,COLORS.secondary],
         ),
     }));
 
@@ -76,7 +91,7 @@ function ProfileScreen() {
         backgroundColor: interpolateColor(
             progress.value,
             [0, 1],
-            [GREEN, RED],
+            [GREEN, COLORS.error ],
         ),
     }));
 
@@ -87,135 +102,133 @@ function ProfileScreen() {
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
-
-            {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.avatarCircle}>
-                        <User size={22} color={NAVY}/>
+                        <User size={22} color={COLORS.primary}/>
                     </View>
                     <Text style={styles.brandName}>Fluid Authority</Text>
                 </View>
                 <TouchableOpacity style={styles.bellBtn}>
-                    <BellRing size={22} color={NAVY}/>
+                    <BellRing size={22} color={COLORS.primary}/>
                 </TouchableOpacity>
             </View>
+            <FadeCard>
 
-            <ScrollView
-                style={styles.scroll}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
-                    <View style={styles.profileCardTop}>
-                        <View>
-                            <Text style={styles.eliteLabel}>
-                                {userProfile.tier.toUpperCase()} MEMBER
-                            </Text>
+                <ScrollView
+                    style={styles.scroll}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Profile Card */}
+                    <View style={styles.profileCard}>
+                        <View style={styles.profileCardTop}>
+                            <View>
+                                <Text style={styles.eliteLabel}>
+                                    {userProfile.tier.toUpperCase()} MEMBER
+                                </Text>
 
-                            <Text style={styles.userName}>
-                                {name}
-                            </Text>
+                                <Text style={styles.userName}>
+                                    {name}
+                                </Text>
 
-                            <View style={styles.ratingRow}>
-                                <Star size={16} fill={'gold'} color={'gold'}/>
-                                <Text style={styles.ratingText}>
-                                    {userProfile.rating} Rating
+                                <View style={styles.ratingRow}>
+                                    <Star size={16} fill={'gold'} color={'gold'}/>
+                                    <Text style={styles.ratingText}>
+                                        {userProfile.rating} Rating
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.goldBadge}>
+                                <Text style={styles.goldText}>
+                                    {userProfile.membershipStatus.toUpperCase()}
                                 </Text>
                             </View>
                         </View>
 
-                        <View style={styles.goldBadge}>
-                            <Text style={styles.goldText}>
-                                {userProfile.membershipStatus.toUpperCase()}
-                            </Text>
+                        <View style={styles.statsRow}>
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>
+                                    {userProfile.totalTrips.toLocaleString()}
+                                </Text>
+                                <Text style={styles.statLabel}>TOTAL TRIPS</Text>
+                            </View>
+
+                            <View style={styles.statDivider}/>
+
+                            <View style={styles.statItem}>
+                                <Text style={styles.statValue}>
+                                    {userProfile.yearsActive}
+                                </Text>
+                                <Text style={styles.statLabel}>YEARS ACTIVE</Text>
+                            </View>
                         </View>
                     </View>
-
-                    <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>
-                                {userProfile.totalTrips.toLocaleString()}
-                            </Text>
-                            <Text style={styles.statLabel}>TOTAL TRIPS</Text>
+                    {/* Switch to Driver Banner */}
+                    <Animated.View style={[styles.driverBanner, animatedBannerStyle]}>
+                        <View style={styles.switchIconCircle}>
+                            <TouchableOpacity onPress={handleToggle}>
+                                <Animated.View style={animatedIconStyle}>
+                                    <RefreshCcw size={22} color={'#fff'}/>
+                                </Animated.View>
+                            </TouchableOpacity>
                         </View>
-
-                        <View style={styles.statDivider}/>
-
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>
-                                {userProfile.yearsActive}
-                            </Text>
-                            <Text style={styles.statLabel}>YEARS ACTIVE</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Switch to Driver Banner */}
-                <Animated.View style={[styles.driverBanner, animatedBannerStyle]}>
-                    <View style={styles.switchIconCircle}>
-                        <TouchableOpacity onPress={handleToggle}>
-                            <Animated.View style={animatedIconStyle}>
-                                <RefreshCcw size={22} color={'#fff'}/>
+                        <Text style={styles.switchTitle}>Switch to {isOnline ? 'Offline' : 'Online'}</Text>
+                        <Text
+                            style={styles.switchSubtitle}>{isOnline ? 'You will not receive rides after going offline' : 'Go online to start earning'}</Text>
+                        <TouchableOpacity activeOpacity={0.85} onPress={handleToggle}>
+                            <Animated.View style={[styles.goOnlineBtn, animatedBtnStyle]}>
+                                <Text style={styles.goOnlineText}>GO {isOnline ? 'OFFLINE' : 'ONLINE'}</Text>
                             </Animated.View>
                         </TouchableOpacity>
+                    </Animated.View>
+                    {/* Account Settings */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Account Settings</Text>
+                        <View style={styles.menuGroup}>
+                            <MenuItem icon={<User size={22} color={COLORS.primary}/>} label="Personal Information"/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem icon={<CreditCard size={22} color={COLORS.primary}/>} label="Payment Methods"/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem icon={<TicketPercent size={22} color={COLORS.primary}/>} label="Promotions" badge={2}/>
+                        </View>
                     </View>
-                    <Text style={styles.switchTitle}>Switch to {isOnline ? 'Offline' : 'Online'}</Text>
-                    <Text style={styles.switchSubtitle}>{isOnline ? 'You will not receive rides after going offline' : 'Go online to start earning'}</Text>
-                    <TouchableOpacity activeOpacity={0.85} onPress={handleToggle}>
-                        <Animated.View style={[styles.goOnlineBtn, animatedBtnStyle]}>
-                            <Text style={styles.goOnlineText}>GO {isOnline ? 'OFFLINE' : 'ONLINE'}</Text>
-                        </Animated.View>
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Security &amp; Help</Text>
+                        <View style={styles.menuGroup}>
+                            <MenuItem icon={<ShieldPlus size={22} color={COLORS.primary}/>} label="Safety Center"/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem icon={<MessageCircleQuestionMark size={22} color={COLORS.primary}/>} label="Support"/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem icon={<Settings size={22} color={COLORS.primary}/>} label="Settings"/>
+                        </View>
+                    </View>
+
+            {/* Logout */}
+            <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.7}>
+                <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+
+            {/* Footer Info */}
+            <View style={styles.footerInfo}>
+                <Text style={styles.footerApp}>APNA GETRIDE APP</Text>
+                <Text style={styles.footerVersion}>Version 0.22.0 (Build 02)</Text>
+                <View style={styles.footerLinks}>
+                    <TouchableOpacity>
+                        <Text style={styles.footerLink}>Privacy Policy</Text>
                     </TouchableOpacity>
-                </Animated.View>
-
-                {/* Account Settings */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account Settings</Text>
-                    <View style={styles.menuGroup}>
-                        <MenuItem icon={<User size={22} color={NAVY}/>} label="Personal Information"/>
-                        <View style={styles.menuDivider}/>
-                        <MenuItem icon={<CreditCard size={22} color={NAVY}/>} label="Payment Methods"/>
-                        <View style={styles.menuDivider}/>
-                        <MenuItem icon={<TicketPercent size={22} color={NAVY}/>} label="Promotions" badge={2}/>
-                    </View>
+                    <Text style={styles.footerSep}> </Text>
+                    <TouchableOpacity>
+                        <Text style={styles.footerLink}>Terms of Service</Text>
+                    </TouchableOpacity>
                 </View>
-
-                {/* Security & Help */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Security &amp; Help</Text>
-                    <View style={styles.menuGroup}>
-                        <MenuItem icon={<ShieldPlus size={22} color={NAVY}/>} label="Safety Center"/>
-                        <View style={styles.menuDivider}/>
-                        <MenuItem icon={<MessageCircleQuestionMark size={22} color={NAVY}/>} label="Support"/>
-                        <View style={styles.menuDivider}/>
-                        <MenuItem icon={<Settings size={22} color={NAVY}/>} label="Settings"/>
-                    </View>
-                </View>
-
-                {/* Logout */}
-                <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.7}>
-                    <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
-
-                {/* Footer Info */}
-                <View style={styles.footerInfo}>
-                    <Text style={styles.footerApp}>APNA GETRIDE APP</Text>
-                    <Text style={styles.footerVersion}>Version 0.22.0 (Build 02)</Text>
-                    <View style={styles.footerLinks}>
-                        <TouchableOpacity>
-                            <Text style={styles.footerLink}>Privacy Policy</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.footerSep}> </Text>
-                        <TouchableOpacity>
-                            <Text style={styles.footerLink}>Terms of Service</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    );
+            </View>
+        </ScrollView>
+            </FadeCard>
+</SafeAreaView>
+)
+    ;
 }
 
 function MenuItem({
@@ -274,20 +287,14 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    avatarText: {
-        fontSize: 18,
-    },
     brandName: {
         fontSize: 17,
         fontWeight: "700",
-        color: NAVY,
+        color: COLORS.primary,
         letterSpacing: 0.2,
     },
     bellBtn: {
         padding: 4,
-    },
-    bellIcon: {
-        fontSize: 22,
     },
     scroll: {
         flex: 1,
@@ -329,10 +336,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
-    },
-    starIcon: {
-        fontSize: 16,
-        color: "#f5a623",
     },
     ratingText: {
         fontSize: 14,
@@ -395,9 +398,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginBottom: 14,
     },
-    switchIcon: {
-        fontSize: 26,
-    },
     switchTitle: {
         color: "#fff",
         fontSize: 18,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 15,
         fontWeight: "700",
-        color: NAVY,
+        color: COLORS.primary,
         marginLeft: 2,
     },
     menuGroup: {
@@ -458,9 +458,6 @@ const styles = StyleSheet.create({
         backgroundColor: "#f0f0f5",
         alignItems: "center",
         justifyContent: "center",
-    },
-    menuIconText: {
-        fontSize: 17,
     },
     menuLabel: {
         flex: 1,
@@ -531,7 +528,7 @@ const styles = StyleSheet.create({
     },
     footerLink: {
         fontSize: 12,
-        color: NAVY,
+        color: COLORS.primary,
         textDecorationLine: "underline",
         fontWeight: "500",
     },

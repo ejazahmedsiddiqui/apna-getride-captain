@@ -9,7 +9,8 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import RenderFormField from "../../components/RenderFormField";
 import {useCallback, useState} from "react";
 import {MaterialCommunityIcons} from "@expo/vector-icons";
-import {LucideMail} from 'lucide-react-native'
+import {LucideMail} from 'lucide-react-native';
+
 function LoginScreen() {
     const navigation = useNavigation();
     const [email, setEmail] = useState("");
@@ -137,7 +138,12 @@ function LoginScreen() {
                 >
                     <Text style={styles.loginButtonText}>Go To Settings</Text>
                 </TouchableOpacity>
-
+                <TouchableOpacity
+                    style={styles.loginButton}
+                    onPress={() => navigation.navigate('Kyc')}
+                >
+                    <Text style={styles.loginButtonText}>Go To KYC page</Text>
+                </TouchableOpacity>
 
             </View>
         </SafeAreaView>
@@ -247,7 +253,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingVertical: 16,
         alignItems: "center",
-        marginBottom: 32,
+        marginBottom: 16,
     },
     loginButtonText: {
         fontSize: 16,

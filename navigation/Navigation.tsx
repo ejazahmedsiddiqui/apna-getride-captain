@@ -5,6 +5,7 @@ import SettingsScreen from "./screens/Settings";
 import LoginScreen from "./auth/Login";
 import ProfileScreen from "./profile/Profile";
 import Layout from '../components/Layout'
+import ProfileKycScreen from "./profile/ProfileKyc";
 const isUserLoggedIn = () => {
     return false
 }
@@ -36,6 +37,11 @@ const RootStack = createNativeStackNavigator({
                 Login: LoginScreen,
             },
         },
+        Kyc: {
+            screens: {
+                Kyc: ProfileKycScreen
+            }
+        }
     },
 });
 type RootStackParamList = StaticParamList<typeof RootStack>;
