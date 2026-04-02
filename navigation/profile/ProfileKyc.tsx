@@ -1,14 +1,13 @@
-import React, {useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
-    ScrollView,
     TouchableOpacity,
     StyleSheet,
     Image,
     Alert,
     StatusBar,
-    Platform, Dimensions,
+    Dimensions,
 } from 'react-native';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -26,7 +25,7 @@ import Animated, {
 import {SafeAreaView} from "react-native-safe-area-context";
 
 type DocKey = 'aadhaarFront' | 'aadhaarBack' | 'pan' | 'license';
-const {height, width} = Dimensions.get('window');
+const {height} = Dimensions.get('window');
 const HEADER_HEIGHT = height * 0.2;
 
 interface KYCFormState {
@@ -340,10 +339,10 @@ const KYCScreen = () => {
                                 placeholder="12-digit Aadhaar"
                                 inputType="aadhaar"
                                 maxLength={12}
-                                labelColor={COLORS.onSurfaceVariant}
-                                labelColorActive={COLORS.labelTint}
-                                borderColorInactive={COLORS.outline}
-                                borderColorActive={COLORS.labelTint}
+                                labelColor={COLORS.primaryContainer}
+                                labelColorActive={COLORS.primary}
+                                borderColorInactive={COLORS.surfaceContainerHighest}
+                                borderColorActive={COLORS.primary}
                                 textColor={COLORS.onSurface}
                                 placeholderTextColor={COLORS.onSurfaceVariant}
                                 error={errors.aadhaarNumber}
@@ -367,10 +366,10 @@ const KYCScreen = () => {
                                 inputType="alphanumeric"
                                 maxLength={10}
                                 autoCapitalize="characters"
-                                labelColor={COLORS.onSurfaceVariant}
-                                labelColorActive={COLORS.labelTint}
-                                borderColorInactive={COLORS.outline}
-                                borderColorActive={COLORS.labelTint}
+                                labelColor={COLORS.primaryContainer}
+                                labelColorActive={COLORS.primary}
+                                borderColorInactive={COLORS.surfaceContainerHighest}
+                                borderColorActive={COLORS.primary}
                                 textColor={COLORS.onSurface}
                                 placeholderTextColor={COLORS.onSurfaceVariant}
                                 error={errors.panNumber}
@@ -403,10 +402,10 @@ const KYCScreen = () => {
                                 placeholder="e.g. DL-0420110012345"
                                 inputType="alphanumeric"
                                 autoCapitalize="characters"
-                                labelColor={COLORS.onSurfaceVariant}
-                                labelColorActive={COLORS.labelTint}
-                                borderColorInactive={COLORS.outline}
-                                borderColorActive={COLORS.labelTint}
+                                labelColor={COLORS.primaryContainer}
+                                labelColorActive={COLORS.primary}
+                                borderColorInactive={COLORS.surfaceContainerHighest}
+                                borderColorActive={COLORS.primary}
                                 textColor={COLORS.onSurface}
                                 placeholderTextColor={COLORS.onSurfaceVariant}
                                 error={errors.licenseNumber}
@@ -429,10 +428,10 @@ const KYCScreen = () => {
                                 placeholder="DD/MM/YYYY"
                                 keyboardType="number-pad"
                                 maxLength={10}
-                                labelColor={COLORS.onSurfaceVariant}
-                                labelColorActive={COLORS.labelTint}
-                                borderColorInactive={COLORS.outline}
-                                borderColorActive={COLORS.labelTint}
+                                labelColor={COLORS.primaryContainer}
+                                labelColorActive={COLORS.primary}
+                                borderColorInactive={COLORS.surfaceContainerHighest}
+                                borderColorActive={COLORS.primary}
                                 textColor={COLORS.onSurface}
                                 placeholderTextColor={COLORS.onSurfaceVariant}
                                 error={errors.licenseExpiryDate}
@@ -604,7 +603,7 @@ const styles = StyleSheet.create({
     fieldStyle: {
         backgroundColor: COLORS.surfaceContainerLow,
         borderRadius: 12,
-        paddingHorizontal: 4,
+        paddingHorizontal: 12,
         paddingVertical: 10,
     },
     inputStyle: {

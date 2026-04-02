@@ -113,6 +113,7 @@ const RenderFormField = ({
     const iconWithColor = icon && React.cloneElement(icon, {
         color: focussed ? borderColorActive : borderColorInactive
     });
+    const borderWithColor = focussed ? borderColorActive : borderColorInactive;
 
     return (
         <View style={styles.container}>
@@ -132,7 +133,7 @@ const RenderFormField = ({
                 {children ? (
                     children
                 ) : (
-                    <View style={[styles.inputField, error && styles.inputFieldError]}>
+                    <View style={[styles.inputField, error && styles.inputFieldError, {borderColor: borderWithColor}]}>
                         {icon && (
                             <View style={styles.iconContainer}>
                                 {iconWithColor}
@@ -144,7 +145,7 @@ const RenderFormField = ({
                                 inputStyle,
                                 {color: textColor},
                                 icon && styles.inputWithIcon,
-                                {borderColor: focussed ? borderColorActive : borderColorInactive},
+
                             ]}
                             value={value}
                             onChangeText={handleTextChange}

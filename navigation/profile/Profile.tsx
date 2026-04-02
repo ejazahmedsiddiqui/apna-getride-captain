@@ -29,10 +29,6 @@ import Animated, {
 import {EaseView} from 'react-native-ease';
 import {COLORS} from '../../utils/COLORS'
 
-
-const GREEN = "#006E1C";
-const RED = "#FF0000";
-
 const userProfile = {
     name: 'Champ Champaign Mohandas Karaganda Gandhi',
     tier: 'elite',
@@ -91,7 +87,7 @@ function ProfileScreen() {
         backgroundColor: interpolateColor(
             progress.value,
             [0, 1],
-            [GREEN, COLORS.error ],
+            [COLORS.secondary, COLORS.error ],
         ),
     }));
 

@@ -1,35 +1,35 @@
-import {View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, Easing, ScrollView} from "react-native";
+import {View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, ScrollView} from "react-native";
 import {useNavigation} from "@react-navigation/native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import {StepForward} from "lucide-react-native";
 import Carousel from "react-native-reanimated-carousel";
-import {useState} from "react";
-import Animated, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
+import Animated, {SharedValue, useAnimatedStyle, useSharedValue, withTiming} from 'react-native-reanimated';
 
 const {width} = Dimensions.get("window");
 
 
-function PaginationDot({isActive}: { isActive: boolean }) {
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        width: withTiming(isActive ? 40 : 7, {duration: 400}),
-        backgroundColor: isActive ? '#000066' : '#ccc',
-    }));
+function PaginationDot({ index, progress }: { index: number; progress: SharedValue<number> }) {
+    const animatedStyle = useAnimatedStyle(() => {
+        const distance = Math.abs(progress.value - index);
+        const isActive = distance < 0.2;
+        return {
+            width: withTiming(isActive ? 40 : 7, { duration: 200 }),
+            backgroundColor: isActive ? '#000066' : '#ccc',
+        };
+    });
 
     return (
         <Animated.View
-            style={[
-                {height: 7, borderRadius: 20, marginHorizontal: 2},
-                animatedStyle,
-            ]}
+            style={[{ height: 7, borderRadius: 20, marginHorizontal: 2 }, animatedStyle]}
         />
     );
 }
 
 function HomeScreen() {
     const navigation = useNavigation();
-    const [activeIndex, setActiveIndex] = useState(0);
+    const progress = useSharedValue(0);
+
     const tabText = [
         {
             id: 1,
@@ -106,7 +106,6 @@ function HomeScreen() {
                         height={160}
                         loop={true}
                         scrollAnimationDuration={400}
-                        onSnapToItem={(index) => setActiveIndex(index)}
                         renderItem={({item}) => (
                             <View style={styles.bottomTabTextBox}>
                                 <View style={{marginBottom: 16}}>
@@ -118,13 +117,16 @@ function HomeScreen() {
                         )}
                         autoPlay={true}
                         autoPlayInterval={6000}
+                        onProgressChange={(_, absoluteProgress) => {
+                            progress.value = absoluteProgress;
+                        }}
                     />
 
                     {/* Pagination + Next button — outside the carousel */}
                     <View style={styles.bottomTabNav}>
                         <View style={styles.bottomTabNavBars}>
                             {tabText.map((_, index) => (
-                                <PaginationDot key={index} isActive={index === activeIndex}/>
+                                <PaginationDot key={index} index={index} progress={progress}/>
                             ))}
                         </View>
                         <TouchableOpacity
