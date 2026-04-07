@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -9,11 +9,11 @@ import {
     StatusBar,
     Dimensions,
 } from 'react-native';
-import {MaterialCommunityIcons} from '@expo/vector-icons';
-import {LinearGradient} from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import RenderFormField from '../../components/RenderFormField';
-import {COLORS} from '../../utils/COLORS'
+import { COLORS } from '../../utils/COLORS'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -22,10 +22,12 @@ import Animated, {
     Extrapolation,
     withTiming,
 } from 'react-native-reanimated';
-import {SafeAreaView} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
+import LoadCard from "../../components/LoadCard";
+
 
 type DocKey = 'aadhaarFront' | 'aadhaarBack' | 'pan' | 'license';
-const {height} = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 const HEADER_HEIGHT = height * 0.2;
 
 interface KYCFormState {
@@ -47,7 +49,7 @@ const pickImage = async (fromCamera: boolean): Promise<string | null> => {
         ? ImagePicker.requestCameraPermissionsAsync
         : ImagePicker.requestMediaLibraryPermissionsAsync;
 
-    const {status} = await permFn();
+    const { status } = await permFn();
     if (status !== 'granted') {
         Alert.alert(
             'Permission Required',
@@ -84,12 +86,12 @@ interface DocTileProps {
     error?: string;
 }
 
-const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error}) => {
+const DocTile: React.FC<DocTileProps> = ({ label, icon, uri, onPick, error }) => {
     const showPickerOptions = () => {
         Alert.alert(label, 'Choose image source', [
-            {text: 'Camera', onPress: () => onPick(true)},
-            {text: 'Gallery', onPress: () => onPick(false)},
-            {text: 'Cancel', style: 'cancel'},
+            { text: 'Camera', onPress: () => onPick(true) },
+            { text: 'Gallery', onPress: () => onPick(false) },
+            { text: 'Cancel', style: 'cancel' },
         ]);
     };
 
@@ -105,9 +107,9 @@ const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error}) => {
             >
                 {uri ? (
                     <>
-                        <Image source={{uri}} style={docStyles.preview} resizeMode="cover"/>
+                        <Image source={{ uri }} style={docStyles.preview} resizeMode="cover" />
                         <View style={docStyles.reuploadOverlay}>
-                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff"/>
+                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff" />
                             <Text style={docStyles.reuploadText}>Replace</Text>
                         </View>
                     </>
@@ -131,15 +133,15 @@ const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error}) => {
 };
 
 const SectionHeader: React.FC<{ step: string; title: string; subtitle: string }> = ({
-                                                                                        step,
-                                                                                        title,
-                                                                                        subtitle,
-                                                                                    }) => (
+    step,
+    title,
+    subtitle,
+}) => (
     <View style={sectionStyles.row}>
         <View style={sectionStyles.stepBadge}>
             <Text style={sectionStyles.stepText}>{step}</Text>
         </View>
-        <View style={{flex: 1}}>
+        <View style={{ flex: 1 }}>
             <Text style={sectionStyles.title}>{title}</Text>
             <Text style={sectionStyles.subtitle}>{subtitle}</Text>
         </View>
@@ -225,20 +227,20 @@ const KYCScreen = () => {
     });
 
     const setField = (key: keyof KYCFormState) => (value: string) => {
-        setForm(prev => ({...prev, [key]: value}));
-        if (errors[key]) setErrors(prev => ({...prev, [key]: ''}));
+        setForm(prev => ({ ...prev, [key]: value }));
+        if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
     };
 
     const handleImagePick = (docKey: DocKey) => async (fromCamera: boolean) => {
         const uri = await pickImage(fromCamera);
         if (uri) {
-            setImages(prev => ({...prev, [docKey]: uri}));
-            setDocErrors(prev => ({...prev, [docKey]: ''}));
+            setImages(prev => ({ ...prev, [docKey]: uri }));
+            setDocErrors(prev => ({ ...prev, [docKey]: '' }));
         }
     };
 
     const validate = (): boolean => {
-        const newErrors: KYCErrors = {aadhaarNumber: '', panNumber: '', licenseNumber: '', licenseExpiryDate: ''};
+        const newErrors: KYCErrors = { aadhaarNumber: '', panNumber: '', licenseNumber: '', licenseExpiryDate: '' };
         const newDocErrors: Partial<Record<DocKey, string>> = {};
         let valid = true;
 
@@ -276,7 +278,7 @@ const KYCScreen = () => {
     const handleSubmit = () => {
         if (!validate()) return;
         Alert.alert('KYC Submitted', "Your documents are under review. We'll notify you within 24 hours.", [
-            {text: 'Got it'},
+            { text: 'Got it' },
         ]);
     };
 
@@ -290,235 +292,237 @@ const KYCScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.root}>
-                <StatusBar barStyle="light-content" backgroundColor={COLORS.primary}/>
+            <LoadCard>
+                <View style={styles.root}>
+                    <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
-                <Animated.View
-                    style={[styles.header, animatedHeaderHeight]}
-                >
-                    <View style={styles.headerInner}>
-                        <View style={{flex: 1}}>
-                            <Animated.Text style={[styles.headerEyebrow, animatedEyebrow]}>
-                                DRIVER ONBOARDING
-                            </Animated.Text>
-                            <Animated.Text style={[styles.headerTitle, animatedTitle]}>
-                                Identity Verification
-                            </Animated.Text>
+                    <Animated.View
+                        style={[styles.header, animatedHeaderHeight]}
+                    >
+                        <View style={styles.headerInner}>
+                            <View style={{ flex: 1 }}>
+                                <Animated.Text style={[styles.headerEyebrow, animatedEyebrow]}>
+                                    DRIVER ONBOARDING
+                                </Animated.Text>
+                                <Animated.Text style={[styles.headerTitle, animatedTitle]}>
+                                    Identity Verification
+                                </Animated.Text>
+                            </View>
+                            <Animated.View style={[styles.shieldBadge, animatedShield]}>
+                                <MaterialCommunityIcons name="shield-check-outline" size={36}
+                                    color={COLORS.secondaryContainer} />
+                            </Animated.View>
                         </View>
-                        <Animated.View style={[styles.shieldBadge, animatedShield]}>
-                            <MaterialCommunityIcons name="shield-check-outline" size={36}
-                                                    color={COLORS.secondaryContainer}/>
-                        </Animated.View>
-                    </View>
-                    <Animated.Text style={[styles.headerSubtitle, animatedSubtitle]}>
-                        Your documents are encrypted and reviewed by our compliance team within 24 hrs.
-                    </Animated.Text>
-                </Animated.View>
+                        <Animated.Text style={[styles.headerSubtitle, animatedSubtitle]}>
+                            Your documents are encrypted and reviewed by our compliance team within 24 hrs.
+                        </Animated.Text>
+                    </Animated.View>
 
-                <Animated.ScrollView
-                    style={styles.scroll}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    onScroll={scrollHandler}
-                    scrollEventThrottle={16}
-                >
+                    <Animated.ScrollView
+                        style={styles.scroll}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        onScroll={scrollHandler}
+                        scrollEventThrottle={16}
+                    >
 
-                    <View style={styles.card}>
-                        <SectionHeader
-                            step="01"
-                            title="Identity Numbers"
-                            subtitle="Enter your government-issued ID numbers exactly as printed."
-                        />
-
-                        <View style={styles.fieldGroup}>
-                            <RenderFormField
-                                label="Aadhaar Number"
-                                value={form.aadhaarNumber}
-                                onChangeText={setField('aadhaarNumber')}
-                                placeholder="12-digit Aadhaar"
-                                inputType="aadhaar"
-                                maxLength={12}
-                                labelColor={COLORS.primaryContainer}
-                                labelColorActive={COLORS.primary}
-                                borderColorInactive={COLORS.surfaceContainerHighest}
-                                borderColorActive={COLORS.primary}
-                                textColor={COLORS.onSurface}
-                                placeholderTextColor={COLORS.onSurfaceVariant}
-                                error={errors.aadhaarNumber}
-                                style={styles.fieldStyle}
-                                inputStyle={styles.inputStyle}
-                                icon={
-                                    <MaterialCommunityIcons
-                                        name="card-account-details-outline"
-                                        size={20}
-                                        color={COLORS.onSurfaceVariant}
-                                    />
-                                }
-                                accessibilityLabel="Aadhaar Number input"
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="01"
+                                title="Identity Numbers"
+                                subtitle="Enter your government-issued ID numbers exactly as printed."
                             />
 
-                            <RenderFormField
-                                label="PAN Number"
-                                value={form.panNumber}
-                                onChangeText={(t) => setField('panNumber')(t.toUpperCase())}
-                                placeholder="ABCDE1234F"
-                                inputType="alphanumeric"
-                                maxLength={10}
-                                autoCapitalize="characters"
-                                labelColor={COLORS.primaryContainer}
-                                labelColorActive={COLORS.primary}
-                                borderColorInactive={COLORS.surfaceContainerHighest}
-                                borderColorActive={COLORS.primary}
-                                textColor={COLORS.onSurface}
-                                placeholderTextColor={COLORS.onSurfaceVariant}
-                                error={errors.panNumber}
-                                style={styles.fieldStyle}
-                                inputStyle={styles.inputStyle}
-                                icon={
-                                    <MaterialCommunityIcons
-                                        name="identifier"
-                                        size={20}
-                                        color={COLORS.onSurfaceVariant}
-                                    />
-                                }
-                                accessibilityLabel="PAN Number input"
-                            />
+                            <View style={styles.fieldGroup}>
+                                <RenderFormField
+                                    label="Aadhaar Number"
+                                    value={form.aadhaarNumber}
+                                    onChangeText={setField('aadhaarNumber')}
+                                    placeholder="12-digit Aadhaar"
+                                    inputType="aadhaar"
+                                    maxLength={12}
+                                    labelColor={COLORS.primaryContainer}
+                                    labelColorActive={COLORS.primary}
+                                    borderColorInactive={COLORS.surfaceContainerHighest}
+                                    borderColorActive={COLORS.primary}
+                                    textColor={COLORS.onSurface}
+                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    error={errors.aadhaarNumber}
+                                    style={styles.fieldStyle}
+                                    inputStyle={styles.inputStyle}
+                                    icon={
+                                        <MaterialCommunityIcons
+                                            name="card-account-details-outline"
+                                            size={20}
+                                            color={COLORS.onSurfaceVariant}
+                                        />
+                                    }
+                                    accessibilityLabel="Aadhaar Number input"
+                                />
+
+                                <RenderFormField
+                                    label="PAN Number"
+                                    value={form.panNumber}
+                                    onChangeText={(t) => setField('panNumber')(t.toUpperCase())}
+                                    placeholder="ABCDE1234F"
+                                    inputType="alphanumeric"
+                                    maxLength={10}
+                                    autoCapitalize="characters"
+                                    labelColor={COLORS.primaryContainer}
+                                    labelColorActive={COLORS.primary}
+                                    borderColorInactive={COLORS.surfaceContainerHighest}
+                                    borderColorActive={COLORS.primary}
+                                    textColor={COLORS.onSurface}
+                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    error={errors.panNumber}
+                                    style={styles.fieldStyle}
+                                    inputStyle={styles.inputStyle}
+                                    icon={
+                                        <MaterialCommunityIcons
+                                            name="identifier"
+                                            size={20}
+                                            color={COLORS.onSurfaceVariant}
+                                        />
+                                    }
+                                    accessibilityLabel="PAN Number input"
+                                />
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={styles.card}>
-                        <SectionHeader
-                            step="02"
-                            title="Driving License"
-                            subtitle="Must be a valid, non-expired commercial driving license."
-                        />
-
-                        <View style={styles.fieldGroup}>
-                            <RenderFormField
-                                label="License Number"
-                                value={form.licenseNumber}
-                                onChangeText={(t) => setField('licenseNumber')(t.toUpperCase())}
-                                placeholder="e.g. DL-0420110012345"
-                                inputType="alphanumeric"
-                                autoCapitalize="characters"
-                                labelColor={COLORS.primaryContainer}
-                                labelColorActive={COLORS.primary}
-                                borderColorInactive={COLORS.surfaceContainerHighest}
-                                borderColorActive={COLORS.primary}
-                                textColor={COLORS.onSurface}
-                                placeholderTextColor={COLORS.onSurfaceVariant}
-                                error={errors.licenseNumber}
-                                style={styles.fieldStyle}
-                                inputStyle={styles.inputStyle}
-                                icon={
-                                    <MaterialCommunityIcons
-                                        name="card-bulleted-outline"
-                                        size={20}
-                                        color={COLORS.onSurfaceVariant}
-                                    />
-                                }
-                                accessibilityLabel="Driving License Number input"
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="02"
+                                title="Driving License"
+                                subtitle="Must be a valid, non-expired commercial driving license."
                             />
 
-                            <RenderFormField
-                                label="License Expiry Date"
-                                value={form.licenseExpiryDate}
-                                onChangeText={handleDateChange}
-                                placeholder="DD/MM/YYYY"
-                                keyboardType="number-pad"
-                                maxLength={10}
-                                labelColor={COLORS.primaryContainer}
-                                labelColorActive={COLORS.primary}
-                                borderColorInactive={COLORS.surfaceContainerHighest}
-                                borderColorActive={COLORS.primary}
-                                textColor={COLORS.onSurface}
-                                placeholderTextColor={COLORS.onSurfaceVariant}
-                                error={errors.licenseExpiryDate}
-                                style={styles.fieldStyle}
-                                inputStyle={styles.inputStyle}
-                                icon={
-                                    <MaterialCommunityIcons
-                                        name="calendar-month-outline"
-                                        size={20}
-                                        color={COLORS.onSurfaceVariant}
-                                    />
-                                }
-                                accessibilityLabel="License Expiry Date input"
-                            />
+                            <View style={styles.fieldGroup}>
+                                <RenderFormField
+                                    label="License Number"
+                                    value={form.licenseNumber}
+                                    onChangeText={(t) => setField('licenseNumber')(t.toUpperCase())}
+                                    placeholder="e.g. DL-0420110012345"
+                                    inputType="alphanumeric"
+                                    autoCapitalize="characters"
+                                    labelColor={COLORS.primaryContainer}
+                                    labelColorActive={COLORS.primary}
+                                    borderColorInactive={COLORS.surfaceContainerHighest}
+                                    borderColorActive={COLORS.primary}
+                                    textColor={COLORS.onSurface}
+                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    error={errors.licenseNumber}
+                                    style={styles.fieldStyle}
+                                    inputStyle={styles.inputStyle}
+                                    icon={
+                                        <MaterialCommunityIcons
+                                            name="card-bulleted-outline"
+                                            size={20}
+                                            color={COLORS.onSurfaceVariant}
+                                        />
+                                    }
+                                    accessibilityLabel="Driving License Number input"
+                                />
+
+                                <RenderFormField
+                                    label="License Expiry Date"
+                                    value={form.licenseExpiryDate}
+                                    onChangeText={handleDateChange}
+                                    placeholder="DD/MM/YYYY"
+                                    keyboardType="number-pad"
+                                    maxLength={10}
+                                    labelColor={COLORS.primaryContainer}
+                                    labelColorActive={COLORS.primary}
+                                    borderColorInactive={COLORS.surfaceContainerHighest}
+                                    borderColorActive={COLORS.primary}
+                                    textColor={COLORS.onSurface}
+                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    error={errors.licenseExpiryDate}
+                                    style={styles.fieldStyle}
+                                    inputStyle={styles.inputStyle}
+                                    icon={
+                                        <MaterialCommunityIcons
+                                            name="calendar-month-outline"
+                                            size={20}
+                                            color={COLORS.onSurfaceVariant}
+                                        />
+                                    }
+                                    accessibilityLabel="License Expiry Date input"
+                                />
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={styles.card}>
-                        <SectionHeader
-                            step="03"
-                            title="Aadhaar Card Photos"
-                            subtitle="Upload clear photos of both sides. Avoid glare and blur."
-                        />
-                        <View style={styles.docRow}>
-                            <DocTile
-                                label="Aadhaar Front"
-                                icon="card-account-details-outline"
-                                uri={images.aadhaarFront}
-                                onPick={handleImagePick('aadhaarFront')}
-                                error={docErrors.aadhaarFront}
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="03"
+                                title="Aadhaar Card Photos"
+                                subtitle="Upload clear photos of both sides. Avoid glare and blur."
                             />
-                            <DocTile
-                                label="Aadhaar Back"
-                                icon="card-account-details-star-outline"
-                                uri={images.aadhaarBack}
-                                onPick={handleImagePick('aadhaarBack')}
-                                error={docErrors.aadhaarBack}
-                            />
+                            <View style={styles.docRow}>
+                                <DocTile
+                                    label="Aadhaar Front"
+                                    icon="card-account-details-outline"
+                                    uri={images.aadhaarFront}
+                                    onPick={handleImagePick('aadhaarFront')}
+                                    error={docErrors.aadhaarFront}
+                                />
+                                <DocTile
+                                    label="Aadhaar Back"
+                                    icon="card-account-details-star-outline"
+                                    uri={images.aadhaarBack}
+                                    onPick={handleImagePick('aadhaarBack')}
+                                    error={docErrors.aadhaarBack}
+                                />
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={styles.card}>
-                        <SectionHeader
-                            step="04"
-                            title="PAN & License Photos"
-                            subtitle="All four corners must be visible. JPG or JPEG only."
-                        />
-                        <View style={styles.docRow}>
-                            <DocTile
-                                label="PAN Card"
-                                icon="identifier"
-                                uri={images.pan}
-                                onPick={handleImagePick('pan')}
-                                error={docErrors.pan}
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="04"
+                                title="PAN & License Photos"
+                                subtitle="All four corners must be visible. JPG or JPEG only."
                             />
-                            <DocTile
-                                label="Driving License"
-                                icon="card-bulleted-outline"
-                                uri={images.license}
-                                onPick={handleImagePick('license')}
-                                error={docErrors.license}
-                            />
+                            <View style={styles.docRow}>
+                                <DocTile
+                                    label="PAN Card"
+                                    icon="identifier"
+                                    uri={images.pan}
+                                    onPick={handleImagePick('pan')}
+                                    error={docErrors.pan}
+                                />
+                                <DocTile
+                                    label="Driving License"
+                                    icon="card-bulleted-outline"
+                                    uri={images.license}
+                                    onPick={handleImagePick('license')}
+                                    error={docErrors.license}
+                                />
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={styles.disclaimer}>
-                        <MaterialCommunityIcons name="lock-outline" size={14} color={COLORS.onSurfaceVariant}/>
-                        <Text style={styles.disclaimerText}>
-                            Your data is encrypted with AES-256 and is only used for compliance verification. We never
-                            share it with third parties.
-                        </Text>
-                    </View>
-                    <TouchableOpacity onPress={handleSubmit} activeOpacity={0.88} style={styles.ctaWrapper}>
-                        <LinearGradient
-                            colors={[COLORS.primary, COLORS.primaryContainer]}
-                            start={{x: 0, y: 0}}
-                            end={{x: 1, y: 1}}
-                            style={styles.ctaGradient}
-                        >
-                            <MaterialCommunityIcons name="shield-check" size={20} color="#fff"/>
-                            <Text style={styles.ctaText}>Submit for Verification</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
+                        <View style={styles.disclaimer}>
+                            <MaterialCommunityIcons name="lock-outline" size={14} color={COLORS.onSurfaceVariant} />
+                            <Text style={styles.disclaimerText}>
+                                Your data is encrypted with AES-256 and is only used for compliance verification. We never
+                                share it with third parties.
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={handleSubmit} activeOpacity={0.88} style={styles.ctaWrapper}>
+                            <LinearGradient
+                                colors={[COLORS.primary, COLORS.primaryContainer]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.ctaGradient}
+                            >
+                                <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
+                                <Text style={styles.ctaText}>Submit for Verification</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
 
-                    <View style={{height: 40}}/>
-                </Animated.ScrollView>
-            </View>
+                        <View style={{ height: 40 }} />
+                    </Animated.ScrollView>
+                </View>
+            </LoadCard>
         </SafeAreaView>
     );
 };
@@ -528,8 +532,9 @@ export default KYCScreen;
 
 const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: COLORS.onSurfaceVariant,
+        flex: 1,
+        backgroundColor: 'white',
+        paddingBottom: 40,
     },
     root: {
         flex: 1,
@@ -591,7 +596,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 20,
         shadowColor: 'rgba(26,28,46,0.08)',
-        shadowOffset: {width: 0, height: 12},
+        shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 1,
         shadowRadius: 32,
         elevation: 3,

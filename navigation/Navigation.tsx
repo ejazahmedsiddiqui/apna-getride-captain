@@ -1,55 +1,68 @@
-import {createStaticNavigation, StaticParamList} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { createStaticNavigation, StaticParamList } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from "./screens/Home";
 import SettingsScreen from "./screens/Settings";
 import LoginScreen from "./auth/Login";
 import ProfileScreen from "./profile/Profile";
-import Layout from '../components/Layout'
+import Layout from '../components/Layout';
 import ProfileKycScreen from "./profile/ProfileKyc";
-const isUserLoggedIn = () => {
-    return false
-}
+import { useUserContext } from '../context/UserContext';
 
+function useIsAuthenticated() {
+    const { token } = useUserContext();
+    return !!token;
+}
 const RootStack = createNativeStackNavigator({
+    groups: {
+        User: {
+            if: useIsAuthenticated,
+            screens: {
+                Profile: {
+                    screen: (props) => <Layout><ProfileScreen {...props} /></Layout>,
+                },
+                Settings: {
+                    screen: (props) => <Layout><SettingsScreen {...props} /></Layout>,
+                },
+                Kyc: {
+                    screen: (props) => <Layout><ProfileKycScreen {...props} /></Layout>,
+                },
+            }
+        },
+        Guest: {
+                if: () => !useIsAuthenticated(),
+                screens: {
+                    Login: LoginScreen,
+                    Home: {
+                        screen: (props) => <Layout><HomeScreen {...props} /></Layout>,
+                    },
+                }
+        }
+    },
     // screens: {
-    //     // Common screens
+    //     Login: LoginScreen,
+    //     Home: {
+    //         screen: (props) => <Layout><HomeScreen {...props} /></Layout>,
+    //     },
+    //     Settings: {
+    //         screen: (props) => <Layout><SettingsScreen {...props} /></Layout>,
+    //     },
+    //     Profile: {
+    //         screen: (props) => <Layout><ProfileScreen {...props} /></Layout>,
+    //     },
+    //     Kyc: ProfileKycScreen,
     // },
-    initialRouteName: 'Login',
+    // initialRouteName: 'Login',
     screenOptions: {
         headerShown: false,
         contentStyle: { flex: 1 },
     },
-    groups: {
-        // User screens
-        User: {
-            screens: {
-                Home: {
-                    screen: (props) => <Layout><HomeScreen {...props} /></Layout>,
-                },
-                Settings: (props) => <Layout><SettingsScreen {...props} /></Layout>,
-                Profile: (props) => <Layout><ProfileScreen {...props} /></Layout>,
-            },
-        },
-        // Auth screens
-        Guest: {
-            // if: () => !isUserLoggedIn(),
-            screens: {
-                Login: LoginScreen,
-            },
-        },
-        Kyc: {
-            screens: {
-                Kyc: ProfileKycScreen
-            }
-        }
-    },
 });
+
 type RootStackParamList = StaticParamList<typeof RootStack>;
 
 declare global {
     namespace ReactNavigation {
-        interface RootParamList extends RootStackParamList {
-        }
+        interface RootParamList extends RootStackParamList { }
     }
 }
 

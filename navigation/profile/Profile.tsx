@@ -1,11 +1,11 @@
-import React, {useState} from "react";
+import React, { useState} from "react";
 import {
     View,
     Text,
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    StatusBar,
+    StatusBar, ActivityIndicator,
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {
@@ -17,7 +17,7 @@ import {
     ShieldPlus,
     MessageCircleQuestionMark,
     Settings,
-    BellRing
+    BellRing,
 } from 'lucide-react-native';
 import Animated, {
     withTiming,
@@ -26,41 +26,26 @@ import Animated, {
     interpolateColor,
     Easing,
 } from "react-native-reanimated";
-import {EaseView} from 'react-native-ease';
-import {COLORS} from '../../utils/COLORS'
+import {COLORS} from '../../utils/COLORS';
+import {useUserContext} from "../../context/UserContext";
+import LoadCard from "../../components/LoadCard";
+import {useNavigation} from "@react-navigation/native";
+import {useAppTheme} from "../../hooks/useAppTheme";
 
-const userProfile = {
-    name: 'Champ Champaign Mohandas Karaganda Gandhi',
-    tier: 'elite',
-    membershipStatus: 'gold',
-    rating: 4.98,
-    totalTrips: 1284,
-    yearsActive: 3.2,
-    onlineStatus: true,
+type MenuItemProps = {
+    Icon: React.ComponentType<{ size?: number; color?: string }>;
+    label: string;
+    badge?: number;
 };
 
-interface FadeCardProps {
-    children: React.ReactNode;
-}
-
-function FadeCard({children}: FadeCardProps) {
-    return (
-        <EaseView
-            initialAnimate={{opacity: 0, translateY: 50}}
-            animate={{opacity: 1, translateY: 0}}
-            transition={{type: 'timing', duration: 800}}
-            style={{flex: 1}}
-        >
-            {children}
-        </EaseView>
-    );
-}
-
 function ProfileScreen() {
-    const name = userProfile.name.length > 15 ? userProfile.name.slice(0, 15) + '...' : userProfile.name;
-    const [isOnline, setIsOnline] = useState<boolean>(userProfile?.onlineStatus ?? false);
-    const progress = useSharedValue(userProfile?.onlineStatus ? 1 : 0);
+    const {user, logout, isLoadingProfile} = useUserContext();
+    const navigation = useNavigation();
+    const [isOnline, setIsOnline] = useState<boolean>(true);
+    const progress = useSharedValue(user?.accountStatus ? 1 : 0);
     const rotation = useSharedValue(0);
+    const {theme, toggle, isDark} = useAppTheme();
+    const { colors, radius, spacing } = theme;
 
     const handleToggle = () => {
         const next = !isOnline;
@@ -79,7 +64,7 @@ function ProfileScreen() {
         backgroundColor: interpolateColor(
             progress.value,
             [0, 1],
-            [ COLORS.primaryContainer,COLORS.secondary],
+            [COLORS.primaryContainer, COLORS.secondary],
         ),
     }));
 
@@ -87,7 +72,7 @@ function ProfileScreen() {
         backgroundColor: interpolateColor(
             progress.value,
             [0, 1],
-            [COLORS.secondary, COLORS.error ],
+            [COLORS.secondary, COLORS.error],
         ),
     }));
 
@@ -95,6 +80,35 @@ function ProfileScreen() {
         transform: [{rotate: `${rotation.value}deg`}],
     }));
 
+    if (isLoadingProfile) {
+        return (
+            <SafeAreaView style={[styles.safe,
+                {
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 12
+                }]}>
+                <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
+                <View style={{
+                    backgroundColor: colors.surfaceContainerLow,
+                    borderRadius: radius.md,
+                    padding: spacing.gutterMobile,
+                }}>
+                    <TouchableOpacity onPress={toggle}>
+                        <Text style={{ color: colors.onSurface }}>
+                            {isDark ? '☀️ Light' : '🌙 Dark'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+                    <ActivityIndicator size={24} color={COLORS.primary}/>
+                    <Text style={{
+                        color: 'black',
+                        fontWeight: 'bold',
+                        fontSize: 16
+                    }}>Loading Profile...</Text>
+            </SafeAreaView>
+        )
+    }
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
@@ -109,7 +123,7 @@ function ProfileScreen() {
                     <BellRing size={22} color={COLORS.primary}/>
                 </TouchableOpacity>
             </View>
-            <FadeCard>
+            <LoadCard>
 
                 <ScrollView
                     style={styles.scroll}
@@ -121,24 +135,24 @@ function ProfileScreen() {
                         <View style={styles.profileCardTop}>
                             <View>
                                 <Text style={styles.eliteLabel}>
-                                    {userProfile.tier.toUpperCase()} MEMBER
+                                    {'gold'.toUpperCase()} MEMBER
                                 </Text>
 
                                 <Text style={styles.userName}>
-                                    {name}
+                                    {user?.fullName || 'Apna GetRide Captain'}
                                 </Text>
 
                                 <View style={styles.ratingRow}>
                                     <Star size={16} fill={'gold'} color={'gold'}/>
                                     <Text style={styles.ratingText}>
-                                        {userProfile.rating} Rating
+                                        {user?.rating} Rating
                                     </Text>
                                 </View>
                             </View>
 
                             <View style={styles.goldBadge}>
                                 <Text style={styles.goldText}>
-                                    {userProfile.membershipStatus.toUpperCase()}
+                                    {'gold'.toUpperCase()}
                                 </Text>
                             </View>
                         </View>
@@ -146,7 +160,7 @@ function ProfileScreen() {
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
                                 <Text style={styles.statValue}>
-                                    {userProfile.totalTrips.toLocaleString()}
+                                    {user?.totalRides?.toLocaleString()}
                                 </Text>
                                 <Text style={styles.statLabel}>TOTAL TRIPS</Text>
                             </View>
@@ -155,7 +169,7 @@ function ProfileScreen() {
 
                             <View style={styles.statItem}>
                                 <Text style={styles.statValue}>
-                                    {userProfile.yearsActive}
+                                    {user?.rating}
                                 </Text>
                                 <Text style={styles.statLabel}>YEARS ACTIVE</Text>
                             </View>
@@ -183,63 +197,78 @@ function ProfileScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Account Settings</Text>
                         <View style={styles.menuGroup}>
-                            <MenuItem icon={<User size={22} color={COLORS.primary}/>} label="Personal Information"/>
+                            <MenuItem Icon={User} label="Personal Information"/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem icon={<CreditCard size={22} color={COLORS.primary}/>} label="Payment Methods"/>
+                            <MenuItem Icon={CreditCard} label="Payment Methods"/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem icon={<TicketPercent size={22} color={COLORS.primary}/>} label="Promotions" badge={2}/>
+                            <MenuItem Icon={TicketPercent} label="Promotions"
+                                      badge={2}/>
                         </View>
                     </View>
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Security &amp; Help</Text>
                         <View style={styles.menuGroup}>
-                            <MenuItem icon={<ShieldPlus size={22} color={COLORS.primary}/>} label="Safety Center"/>
+                            <MenuItem Icon={ShieldPlus} label="Safety Center"/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem icon={<MessageCircleQuestionMark size={22} color={COLORS.primary}/>} label="Support"/>
+                            <MenuItem Icon={MessageCircleQuestionMark}
+                                      label="Support"/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem icon={<Settings size={22} color={COLORS.primary}/>} label="Settings"/>
+                            <MenuItem Icon={Settings} label="Settings"/>
                         </View>
                     </View>
 
-            {/* Logout */}
-            <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.7}>
-                <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
+                    {/* Logout */}
+                    <TouchableOpacity
+                        style={styles.logoutBtn}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Logout Button"
+                        onPress={logout}
+                    >
+                        <Text style={styles.logoutText}>Logout</Text>
+                    </TouchableOpacity>
 
-            {/* Footer Info */}
-            <View style={styles.footerInfo}>
-                <Text style={styles.footerApp}>APNA GETRIDE APP</Text>
-                <Text style={styles.footerVersion}>Version 0.22.0 (Build 02)</Text>
-                <View style={styles.footerLinks}>
-                    <TouchableOpacity>
-                        <Text style={styles.footerLink}>Privacy Policy</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.footerSep}> </Text>
-                    <TouchableOpacity>
-                        <Text style={styles.footerLink}>Terms of Service</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </ScrollView>
-            </FadeCard>
-</SafeAreaView>
-)
-    ;
+                    {/* Footer Info */}
+                    <View style={styles.footerInfo}>
+                        <Text style={styles.footerApp}>APNA GETRIDE APP</Text>
+                        <Text style={styles.footerVersion}>Version 0.22.0 (Build 02)</Text>
+                        <View style={styles.footerLinks}>
+                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Privacy Policy">
+                                <Text style={styles.footerLink}>Privacy Policy</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.footerSep}> </Text>
+                            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Terms of Service">
+                                <Text style={styles.footerLink}>Terms of Service</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Check KYC"
+                                          onPress={() => navigation.navigate('Kyc')}>
+                            <Text style={styles.footerLink}>check your KYC here</Text>
+                        </TouchableOpacity>
+                        <View style={{
+                            backgroundColor: colors.surfaceContainerLow,
+                            borderRadius: radius.md,
+                            padding: spacing.gutterMobile,
+                        }}>
+                            <TouchableOpacity onPress={toggle}>
+                                <Text style={{ color: colors.onSurface }}>
+                                    {isDark ? '☀️ Light' : '🌙 Dark'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ScrollView>
+            </LoadCard>
+        </SafeAreaView>
+    )
+        ;
 }
 
-function MenuItem({
-                      icon,
-                      label,
-                      badge,
-                  }: {
-    icon: React.ReactNode;
-    label: string;
-    badge?: number;
-}) {
+const MenuItem = React.memo(({ Icon, label, badge }: MenuItemProps)=> {
     return (
         <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
             <View style={styles.menuIconBox}>
-                {icon}
+                <Icon size={22} color={COLORS.primary} />
             </View>
             <Text style={styles.menuLabel}>{label}</Text>
             <View style={styles.menuRight}>
@@ -252,7 +281,7 @@ function MenuItem({
             </View>
         </TouchableOpacity>
     );
-}
+})
 
 const styles = StyleSheet.create({
     safe: {

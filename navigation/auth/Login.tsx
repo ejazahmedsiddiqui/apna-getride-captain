@@ -2,154 +2,67 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity, ActivityIndicator, Alert,
+    TouchableOpacity,
+    ActivityIndicator,
 } from "react-native";
-import {useNavigation} from "@react-navigation/native";
-import {SafeAreaView} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import RenderFormField from "../../components/RenderFormField";
-import {useCallback, useEffect, useState} from "react";
-import {MaterialCommunityIcons} from "@expo/vector-icons";
-import {LucideMail} from 'lucide-react-native';
-import {useOtpLogin} from "../../hooks/useSendOtp";
-import {COLORS} from "../../utils/COLORS";
-import {Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming} from "react-native-reanimated";
-
-const useCardFlip = () => {
-    const flip1 = useSharedValue(0);
-    const flip2 = useSharedValue(0);
-
-    const flipTo = (page: 0 | 1 | 2) => {
-        const cfg = {duration: 700, easing: Easing.bezier(0.4, 0, 0.2, 1)};
-        if (page === 0) {
-            flip1.value = withTiming(0, cfg);
-            flip2.value = withTiming(0, cfg);
-        } else if (page === 1) {
-            flip1.value = withTiming(1, cfg);
-            flip2.value = withTiming(0, cfg);
-        } else {
-            flip1.value = withTiming(1, cfg);
-            flip2.value = withTiming(1, cfg);
-        }
-    };
-
-    return {flip1, flip2, flipTo};
-};
+import { useCallback, useEffect, useState } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { LucideMail } from "lucide-react-native";
+import { useOtpLogin } from "../../hooks/useOtpLogin";
+import { COLORS } from "../../utils/COLORS";
 
 function LoginScreen() {
-    const navigation = useNavigation();
     const [resendTimer, setResendTimer] = useState(0);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otp, setOtp] = useState("");
-    const {data, loading, error, getOtp, verifyOtp} = useOtpLogin();
-    const [step, setStep] = useState(1);
-    const progress = useSharedValue(0);
-
-    const {flip1, flip2, flipTo} = useCardFlip();
+    const { loading, error, getOtp, verifyOtp } = useOtpLogin();
+    const [step, setStep] = useState<1 | 2>(1);
 
     useEffect(() => {
-        let interval: any = 0;
-        if (resendTimer > 0) {
-            interval = setInterval(() => setResendTimer((p) => p - 1), 1000);
-        }
+        if (resendTimer <= 0) return;
+
+        const interval = setInterval(() => {
+            setResendTimer((p) => p - 1);
+        }, 1000);
+
         return () => clearInterval(interval);
     }, [resendTimer]);
 
+    const disabled = step === 1 ? phoneNumber.length !== 10 : otp.length !== 6;
+
     const handleLogin = useCallback(async () => {
-        step === 1
-            ? await getOtp(phoneNumber)
-                .then(() => {
-                    if (data?.success) {
-                        console.log('Data fetched is: ', data)
-                        setStep(2);
-                        progress.value = withTiming(1, {
-                            duration: 400,
-                            easing: Easing.bezier(0.4, 0, 0.2, 1),
-                        });
-                    } else {
-                        console.log('Data fetched is Error: ', data?.success)
-                        setStep(1);
-                        Alert.alert('Error', error?.message || data?.message || 'An Error occurred.');
-                        progress.value = withTiming(progress.value === 1 ? 0 : 0, {
-                            duration: 400,
-                            easing: Easing.bezier(0.4, 0, 0.2, 1),
-                        });
-                    }
-                })
-            : verifyOtp(otp)
-                .then(() => {
-                    console.log('OTP verification called.');
-                    navigation.navigate("Home")
-                })
-    }, [phoneNumber, otp, step]);
-
-    const handleLoginButtonPress = async () => {
-        switch (step) {
-            case 0:
-                if (phoneNumber.length !== 10) return;
-                await getOtp(phoneNumber)
-                    .then(() => {
-                        if (data?.success) {
-                            setStep(2);
-                            flipTo(1)
-                        } else {
-                            console.log('Data fetched is Error: ', data?.success)
-                            setStep(1);
-                            flipTo(0)
-                            Alert.alert('Error', error?.message || data?.message || 'An Error occurred.');
-                        }
-                    })
-                break;
-            case 1:
-                if (otp.length !== 6) return;
-                flipTo(2);
-                await verifyOtp(otp)
-                    .then(() => {
-                        if (!data?.success) {
-                            Alert.alert('Error', error?.message || 'An error occurred: ' + error?.message);
-                            flipTo(1);
-                            setStep(1);
-                        } else {
-                            navigation.navigate('Home');
-                        }
-                    })
-                break;
-
-            default:
-                setStep(0);
-                flipTo(0);
-                break;
+        if (step === 1) {
+            if (phoneNumber.length !== 10) return;
+            const sent = await getOtp(phoneNumber);
+            if (sent) {
+                setStep(2);
+                setResendTimer(30);
+            }
+        } else {
+            if (otp.length !== 6) return;
+            await verifyOtp(phoneNumber, otp);
         }
-    };
+    }, [step, phoneNumber, otp, getOtp, verifyOtp]);
 
-    const disabled = (step === 1 ? phoneNumber.length !== 10 : otp.length !== 6)
-    const phoneStyle = useAnimatedStyle(() => ({
-        transform: [
-            {perspective: 900},
-            {rotateX: `${interpolate(flip1.value, [0, 1], [0, 180])}deg`},
-        ],
-        pointerEvents: flip1.value > 0.5 ? 'none' : 'auto',
-    }));
+    const handleResend = useCallback(async () => {
+        if (resendTimer > 0) return;
+        const sent = await getOtp(phoneNumber);
+        if (sent) setResendTimer(30);
+    }, [resendTimer, phoneNumber, getOtp]);
 
-    const otpStyle = useAnimatedStyle(() => ({
-        transform: [
-            {perspective: 900},
-            {
-                rotateX: `${
-                    interpolate(flip1.value, [0, 1], [180, 360]) +
-                    interpolate(flip2.value, [0, 1], [0, 180])
-                }deg`,
-            },
-        ],
-        pointerEvents: flip1.value < 0.5 || flip2.value > 0.5 ? 'none' : 'auto',
-    }));
+    const buttonLabel = useCallback(() => {
+        if (loading) return;
+        if (step === 1) return "Get OTP";
+        return otp.length !== 6 ? "Enter 6-digit OTP" : "Verify OTP";
+    }, [loading, step, otp]);
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.inner}>
-
-                {/* App Name */}
                 <Text style={styles.appName}>Apna Get Ride</Text>
 
-                {/* Header */}
                 <View style={styles.headerBlock}>
                     <Text style={styles.welcomeTitle}>Welcome Back</Text>
                     <Text style={styles.welcomeSubtitle}>
@@ -157,35 +70,33 @@ function LoginScreen() {
                     </Text>
                 </View>
 
-                {/* Social Buttons */}
                 <View style={styles.socialRow}>
                     <TouchableOpacity
                         style={styles.socialButton}
-                        accessible={true}
-                        accessibilityLabel={'Sign-in with Google'}
+                        accessible
+                        accessibilityLabel="Sign-in with Google"
+                        accessibilityRole="button"
                     >
-                        <MaterialCommunityIcons name="google" size={20} color="#1a1a2e"/>
+                        <MaterialCommunityIcons name="google" size={20} color="#1a1a2e" />
                         <Text style={styles.socialButtonText}>Google</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         style={styles.socialButton}
-                        accessible={true}
-                        accessibilityLabel={'Sign-in with Apple'}
+                        accessible
+                        accessibilityLabel="Sign-in with Apple"
                     >
-                        <LucideMail size={20} color="#1a1a2e"/>
+                        <LucideMail size={20} color="#1a1a2e" />
                         <Text style={styles.socialButtonText}>Apple</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Divider */}
                 <View style={styles.dividerRow}>
-                    <View style={styles.dividerLine}/>
+                    <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-                    <View style={styles.dividerLine}/>
+                    <View style={styles.dividerLine} />
                 </View>
 
-                {/* Email Field */}
                 <RenderFormField
                     value={phoneNumber}
                     onChangeText={setPhoneNumber}
@@ -199,34 +110,29 @@ function LoginScreen() {
                     borderColorActive="#1a1a2e"
                     textColor="#111827"
                     placeholderTextColor="#9CA3AF"
-                    icon={
-                        <LucideMail
-                            size={20}
-                            color="#1a1a2e"
-                        />
-                    }
+                    icon={<LucideMail size={20} color="#1a1a2e" />}
                     style={styles.fieldSpacing}
-                    accessibilityLabel={'Input your 10-digit phone number here'}
+                    accessibilityLabel="Input your 10-digit phone number here"
                     maxLength={10}
-                    inputType={'phone'}
+                    inputType="phone"
                     editable={step === 1}
                 />
 
-                {/* Password Field with Forgot label */}
                 <View style={styles.passwordBlock}>
                     <View style={styles.passwordLabelRow}>
                         <Text style={styles.passwordLabel}>OTP</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity
+                        accessibilityRole="button">
                             <Text style={styles.forgotText}>FORGOT?</Text>
                         </TouchableOpacity>
                     </View>
                     <RenderFormField
                         value={otp}
                         onChangeText={setOtp}
-                        placeholder="••••••••"
+                        placeholder="••••••"
                         keyboardType="numeric"
                         autoCapitalize="none"
-                        secureTextEntry={true}
+                        secureTextEntry
                         borderColorInactive="#E5E7EB"
                         borderColorActive="#1a1a2e"
                         textColor="#111827"
@@ -238,65 +144,55 @@ function LoginScreen() {
                                 color="#9CA3AF"
                             />
                         }
-                        accessibilityLabel={'Input your 6-digit OTP78 here'}
+                        accessibilityLabel="Input your 6-digit OTP here"
                         maxLength={6}
                         editable={step === 2}
                     />
                 </View>
 
-                {/* Login Button */}
+                {error && (
+                    <Text style={styles.errorText}>{error.message}</Text>
+                )}
+
                 <TouchableOpacity
-                    style={[styles.loginButton,
-                        (disabled || loading) && {backgroundColor: COLORS.surfaceContainerHighest}]}
+                accessibilityRole="button"
+                    style={[
+                        styles.loginButton,
+                        (disabled || loading) && { backgroundColor: COLORS.surfaceContainerHighest },
+                    ]}
                     onPress={handleLogin}
                     disabled={disabled || loading}
                 >
-                    <Text style={styles.loginButtonText}>
-                        {error ? error.message : loading
-                            ? <ActivityIndicator size={16} color={COLORS.secondary}/>
-                            : step === 1
-                                ? 'Get OTP'
-                                : `${otp.length !== 6
-                                    ? 'Enter 6-digit OTP'
-                                    : 'Verify OTP'}`
-                        }
-                    </Text>
-                </TouchableOpacity>
-                {step === 2 && <View style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                }}>
-                    <TouchableOpacity onPress={() => setStep(1)}>
-                        <Text style={{
-                            fontSize: 12,
-                            color: 'blue'
-                        }}>Change Phone Number?</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Text>Resend OTP</Text>
-                    </TouchableOpacity>
-
-                </View>}
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => navigation.navigate('Home')}
-                >
-                    <Text style={styles.loginButtonText}>Go To Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => navigation.navigate('Settings')}
-                >
-                    <Text style={styles.loginButtonText}>Go To Settings</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.loginButton}
-                    onPress={() => navigation.navigate('Kyc')}
-                >
-                    <Text style={styles.loginButtonText}>Go To KYC page</Text>
+                    {loading ? (
+                        <ActivityIndicator size={16} color={COLORS.secondary} />
+                    ) : (
+                        <Text style={styles.loginButtonText}>{buttonLabel()}</Text>
+                    )}
                 </TouchableOpacity>
 
+                {step === 2 && (
+                    <View style={styles.stepTwoRow}>
+                        <TouchableOpacity
+                        accessibilityRole="button"
+                        onPress={() => { setStep(1); setOtp(""); }}>
+                            <Text style={styles.changePhoneText}>Change Phone Number?</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                        accessibilityRole="button"
+                            onPress={handleResend}
+                            disabled={resendTimer > 0 || loading}
+                        >
+                            <Text
+                                style={[
+                                    styles.resendText,
+                                    resendTimer > 0 && styles.resendTextDisabled,
+                                ]}
+                            >
+                                {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
         </SafeAreaView>
     );
@@ -400,6 +296,12 @@ const styles = StyleSheet.create({
         color: "#1a1a2e",
         letterSpacing: 0.5,
     },
+    errorText: {
+        fontSize: 13,
+        color: "#DC2626",
+        marginBottom: 8,
+        textAlign: "center",
+    },
     loginButton: {
         backgroundColor: "#1a1a2e",
         borderRadius: 12,
@@ -412,5 +314,24 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#FFFFFF",
         letterSpacing: 0.3,
+    },
+    stepTwoRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: 8,
+    },
+    changePhoneText: {
+        fontSize: 12,
+        color: "#1a1a2e",
+        fontWeight: "600",
+    },
+    resendText: {
+        fontSize: 12,
+        color: "#1a1a2e",
+        fontWeight: "600",
+    },
+    resendTextDisabled: {
+        color: "#9CA3AF",
     },
 });
