@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useMemo, useState} from 'react';
 import {
     View,
     Text,
@@ -9,11 +9,10 @@ import {
     StatusBar,
     Dimensions,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import RenderFormField from '../../components/RenderFormField';
-import { COLORS } from '../../utils/COLORS'
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -22,12 +21,22 @@ import Animated, {
     Extrapolation,
     withTiming,
 } from 'react-native-reanimated';
-import { SafeAreaView } from "react-native-safe-area-context";
-import LoadCard from "../../components/LoadCard";
+import {SafeAreaView} from 'react-native-safe-area-context';
+import LoadCard from '../../components/LoadCard';
+import {useAppTheme} from '../../hooks/useAppTheme';
+import {AppColors, AppTheme} from '../../theme';
 
+type ThemeType = {
+    theme: AppTheme;
+    colors: AppColors;
+    isDark: boolean;
+    shadow:  {
+        boxShadow: string;
+    }
+};
 
 type DocKey = 'aadhaarFront' | 'aadhaarBack' | 'pan' | 'license';
-const { height } = Dimensions.get('window');
+const {height} = Dimensions.get('window');
 const HEADER_HEIGHT = height * 0.2;
 
 interface KYCFormState {
@@ -49,7 +58,7 @@ const pickImage = async (fromCamera: boolean): Promise<string | null> => {
         ? ImagePicker.requestCameraPermissionsAsync
         : ImagePicker.requestMediaLibraryPermissionsAsync;
 
-    const { status } = await permFn();
+    const {status} = await permFn();
     if (status !== 'granted') {
         Alert.alert(
             'Permission Required',
@@ -84,21 +93,22 @@ interface DocTileProps {
     uri: string | null;
     onPick: (fromCamera: boolean) => void;
     error?: string;
+    colors: AppColors;
+    docStyles: ReturnType<typeof createDocStyles>;
 }
 
-const DocTile: React.FC<DocTileProps> = ({ label, icon, uri, onPick, error }) => {
+const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error, colors, docStyles}) => {
     const showPickerOptions = () => {
         Alert.alert(label, 'Choose image source', [
-            { text: 'Camera', onPress: () => onPick(true) },
-            { text: 'Gallery', onPress: () => onPick(false) },
-            { text: 'Cancel', style: 'cancel' },
+            {text: 'Camera', onPress: () => onPick(true)},
+            {text: 'Gallery', onPress: () => onPick(false)},
+            {text: 'Cancel', style: 'cancel'},
         ]);
     };
 
     return (
         <View style={docStyles.wrapper}>
             <Text style={docStyles.metaLabel}>{label.toUpperCase()}</Text>
-
             <TouchableOpacity
                 style={[docStyles.tile, error ? docStyles.tileError : null]}
                 onPress={showPickerOptions}
@@ -107,20 +117,16 @@ const DocTile: React.FC<DocTileProps> = ({ label, icon, uri, onPick, error }) =>
             >
                 {uri ? (
                     <>
-                        <Image source={{ uri }} style={docStyles.preview} resizeMode="cover" />
+                        <Image source={{uri}} style={docStyles.preview} resizeMode="cover"/>
                         <View style={docStyles.reuploadOverlay}>
-                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff" />
+                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff"/>
                             <Text style={docStyles.reuploadText}>Replace</Text>
                         </View>
                     </>
                 ) : (
                     <View style={docStyles.placeholder}>
                         <View style={docStyles.iconRing}>
-                            <MaterialCommunityIcons
-                                name={icon}
-                                size={28}
-                                color={COLORS.primary}
-                            />
+                            <MaterialCommunityIcons name={icon} size={28} color={colors.primary}/>
                         </View>
                         <Text style={docStyles.placeholderTitle}>Upload Document</Text>
                         <Text style={docStyles.placeholderSub}>Camera · JPG · JPEG</Text>
@@ -132,16 +138,19 @@ const DocTile: React.FC<DocTileProps> = ({ label, icon, uri, onPick, error }) =>
     );
 };
 
-const SectionHeader: React.FC<{ step: string; title: string; subtitle: string }> = ({
-    step,
-    title,
-    subtitle,
-}) => (
+interface SectionHeaderProps {
+    step: string;
+    title: string;
+    subtitle: string;
+    sectionStyles: ReturnType<typeof createSectionStyles>;
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({step, title, subtitle, sectionStyles}) => (
     <View style={sectionStyles.row}>
         <View style={sectionStyles.stepBadge}>
             <Text style={sectionStyles.stepText}>{step}</Text>
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{flex: 1}}>
             <Text style={sectionStyles.title}>{title}</Text>
             <Text style={sectionStyles.subtitle}>{subtitle}</Text>
         </View>
@@ -149,6 +158,13 @@ const SectionHeader: React.FC<{ step: string; title: string; subtitle: string }>
 );
 
 const KYCScreen = () => {
+    const {theme, isDark} = useAppTheme();
+    const {colors, shadow} = theme;
+
+    const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+    const docStyles = useMemo(() => createDocStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+    const sectionStyles = useMemo(() => createSectionStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+
     const [form, setForm] = useState<KYCFormState>({
         aadhaarNumber: '',
         panNumber: '',
@@ -162,6 +178,7 @@ const KYCScreen = () => {
         licenseNumber: '',
         licenseExpiryDate: '',
     });
+
     const scrollY = useSharedValue(0);
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -173,36 +190,25 @@ const KYCScreen = () => {
         height: interpolate(scrollY.value, [0, 150], [HEADER_HEIGHT, HEADER_HEIGHT * 0.4], Extrapolation.CLAMP),
     }));
 
-    // Title: shrinks + shifts up into the compact bar position
     const animatedTitle = useAnimatedStyle(() => ({
         transform: [
-            {
-                translateY: interpolate(scrollY.value, [0, 100], [0, -4], Extrapolation.CLAMP),
-            },
-            {
-                translateX: withTiming(scrollY.value > 80 ? -40 : 0)
-            },
-            {
-                scale: interpolate(scrollY.value, [0, 100], [1, 0.62], Extrapolation.CLAMP),
-            }
+            {translateY: interpolate(scrollY.value, [0, 100], [0, -4], Extrapolation.CLAMP)},
+            {translateX: withTiming(scrollY.value > 80 ? -40 : 0)},
+            {scale: interpolate(scrollY.value, [0, 100], [1, 0.62], Extrapolation.CLAMP)},
         ],
     }));
 
     const animatedEyebrow = useAnimatedStyle(() => ({
         opacity: interpolate(scrollY.value, [0, 50], [1, 0], Extrapolation.CLAMP),
         transform: [
-            {
-                translateY: interpolate(scrollY.value, [0, 50], [0, -80], Extrapolation.CLAMP),
-            },
+            {translateY: interpolate(scrollY.value, [0, 50], [0, -80], Extrapolation.CLAMP)},
         ],
     }));
 
     const animatedSubtitle = useAnimatedStyle(() => ({
         opacity: interpolate(scrollY.value, [0, 70], [1, 0], Extrapolation.CLAMP),
         transform: [
-            {
-                translateY: interpolate(scrollY.value, [0, 70], [0, -12], Extrapolation.CLAMP),
-            },
+            {translateY: interpolate(scrollY.value, [0, 70], [0, -12], Extrapolation.CLAMP)},
         ],
         maxHeight: interpolate(scrollY.value, [40, 80], [60, 0], Extrapolation.CLAMP),
         marginBottom: interpolate(scrollY.value, [40, 80], [20, 0], Extrapolation.CLAMP),
@@ -211,9 +217,7 @@ const KYCScreen = () => {
     const animatedShield = useAnimatedStyle(() => ({
         opacity: interpolate(scrollY.value, [0, 60], [1, 0], Extrapolation.CLAMP),
         transform: [
-            {
-                scale: interpolate(scrollY.value, [0, 60], [1, 0.6], Extrapolation.CLAMP),
-            },
+            {scale: interpolate(scrollY.value, [0, 60], [1, 0.6], Extrapolation.CLAMP)},
         ],
     }));
 
@@ -227,20 +231,20 @@ const KYCScreen = () => {
     });
 
     const setField = (key: keyof KYCFormState) => (value: string) => {
-        setForm(prev => ({ ...prev, [key]: value }));
-        if (errors[key]) setErrors(prev => ({ ...prev, [key]: '' }));
+        setForm(prev => ({...prev, [key]: value}));
+        if (errors[key]) setErrors(prev => ({...prev, [key]: ''}));
     };
 
     const handleImagePick = (docKey: DocKey) => async (fromCamera: boolean) => {
         const uri = await pickImage(fromCamera);
         if (uri) {
-            setImages(prev => ({ ...prev, [docKey]: uri }));
-            setDocErrors(prev => ({ ...prev, [docKey]: '' }));
+            setImages(prev => ({...prev, [docKey]: uri}));
+            setDocErrors(prev => ({...prev, [docKey]: ''}));
         }
     };
 
     const validate = (): boolean => {
-        const newErrors: KYCErrors = { aadhaarNumber: '', panNumber: '', licenseNumber: '', licenseExpiryDate: '' };
+        const newErrors: KYCErrors = {aadhaarNumber: '', panNumber: '', licenseNumber: '', licenseExpiryDate: ''};
         const newDocErrors: Partial<Record<DocKey, string>> = {};
         let valid = true;
 
@@ -278,7 +282,7 @@ const KYCScreen = () => {
     const handleSubmit = () => {
         if (!validate()) return;
         Alert.alert('KYC Submitted', "Your documents are under review. We'll notify you within 24 hours.", [
-            { text: 'Got it' },
+            {text: 'Got it'},
         ]);
     };
 
@@ -294,13 +298,14 @@ const KYCScreen = () => {
         <SafeAreaView style={styles.container}>
             <LoadCard>
                 <View style={styles.root}>
-                    <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+                    <StatusBar
+                        barStyle="light-content"
+                        backgroundColor={colors.primary}
+                    />
 
-                    <Animated.View
-                        style={[styles.header, animatedHeaderHeight]}
-                    >
+                    <Animated.View style={[styles.header, animatedHeaderHeight]}>
                         <View style={styles.headerInner}>
-                            <View style={{ flex: 1 }}>
+                            <View style={{flex: 1}}>
                                 <Animated.Text style={[styles.headerEyebrow, animatedEyebrow]}>
                                     DRIVER ONBOARDING
                                 </Animated.Text>
@@ -309,8 +314,11 @@ const KYCScreen = () => {
                                 </Animated.Text>
                             </View>
                             <Animated.View style={[styles.shieldBadge, animatedShield]}>
-                                <MaterialCommunityIcons name="shield-check-outline" size={36}
-                                    color={COLORS.secondaryContainer} />
+                                <MaterialCommunityIcons
+                                    name="shield-check-outline"
+                                    size={36}
+                                    color={colors.secondaryContainer}
+                                />
                             </Animated.View>
                         </View>
                         <Animated.Text style={[styles.headerSubtitle, animatedSubtitle]}>
@@ -326,14 +334,13 @@ const KYCScreen = () => {
                         onScroll={scrollHandler}
                         scrollEventThrottle={16}
                     >
-
                         <View style={styles.card}>
                             <SectionHeader
                                 step="01"
                                 title="Identity Numbers"
                                 subtitle="Enter your government-issued ID numbers exactly as printed."
+                                sectionStyles={sectionStyles}
                             />
-
                             <View style={styles.fieldGroup}>
                                 <RenderFormField
                                     label="Aadhaar Number"
@@ -342,12 +349,12 @@ const KYCScreen = () => {
                                     placeholder="12-digit Aadhaar"
                                     inputType="aadhaar"
                                     maxLength={12}
-                                    labelColor={COLORS.primaryContainer}
-                                    labelColorActive={COLORS.primary}
-                                    borderColorInactive={COLORS.surfaceContainerHighest}
-                                    borderColorActive={COLORS.primary}
-                                    textColor={COLORS.onSurface}
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    labelColor={colors.primaryContainer}
+                                    labelColorActive={colors.primary}
+                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorActive={colors.primary}
+                                    textColor={colors.onSurface}
+                                    placeholderTextColor={colors.onSurfaceVariant}
                                     error={errors.aadhaarNumber}
                                     style={styles.fieldStyle}
                                     inputStyle={styles.inputStyle}
@@ -355,12 +362,11 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="card-account-details-outline"
                                             size={20}
-                                            color={COLORS.onSurfaceVariant}
+                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="Aadhaar Number input"
                                 />
-
                                 <RenderFormField
                                     label="PAN Number"
                                     value={form.panNumber}
@@ -369,12 +375,12 @@ const KYCScreen = () => {
                                     inputType="alphanumeric"
                                     maxLength={10}
                                     autoCapitalize="characters"
-                                    labelColor={COLORS.primaryContainer}
-                                    labelColorActive={COLORS.primary}
-                                    borderColorInactive={COLORS.surfaceContainerHighest}
-                                    borderColorActive={COLORS.primary}
-                                    textColor={COLORS.onSurface}
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    labelColor={colors.primaryContainer}
+                                    labelColorActive={colors.primary}
+                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorActive={colors.primary}
+                                    textColor={colors.onSurface}
+                                    placeholderTextColor={colors.onSurfaceVariant}
                                     error={errors.panNumber}
                                     style={styles.fieldStyle}
                                     inputStyle={styles.inputStyle}
@@ -382,7 +388,7 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="identifier"
                                             size={20}
-                                            color={COLORS.onSurfaceVariant}
+                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="PAN Number input"
@@ -395,8 +401,8 @@ const KYCScreen = () => {
                                 step="02"
                                 title="Driving License"
                                 subtitle="Must be a valid, non-expired commercial driving license."
+                                sectionStyles={sectionStyles}
                             />
-
                             <View style={styles.fieldGroup}>
                                 <RenderFormField
                                     label="License Number"
@@ -405,12 +411,12 @@ const KYCScreen = () => {
                                     placeholder="e.g. DL-0420110012345"
                                     inputType="alphanumeric"
                                     autoCapitalize="characters"
-                                    labelColor={COLORS.primaryContainer}
-                                    labelColorActive={COLORS.primary}
-                                    borderColorInactive={COLORS.surfaceContainerHighest}
-                                    borderColorActive={COLORS.primary}
-                                    textColor={COLORS.onSurface}
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    labelColor={colors.primaryContainer}
+                                    labelColorActive={colors.primary}
+                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorActive={colors.primary}
+                                    textColor={colors.onSurface}
+                                    placeholderTextColor={colors.onSurfaceVariant}
                                     error={errors.licenseNumber}
                                     style={styles.fieldStyle}
                                     inputStyle={styles.inputStyle}
@@ -418,12 +424,11 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="card-bulleted-outline"
                                             size={20}
-                                            color={COLORS.onSurfaceVariant}
+                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="Driving License Number input"
                                 />
-
                                 <RenderFormField
                                     label="License Expiry Date"
                                     value={form.licenseExpiryDate}
@@ -431,12 +436,12 @@ const KYCScreen = () => {
                                     placeholder="DD/MM/YYYY"
                                     keyboardType="number-pad"
                                     maxLength={10}
-                                    labelColor={COLORS.primaryContainer}
-                                    labelColorActive={COLORS.primary}
-                                    borderColorInactive={COLORS.surfaceContainerHighest}
-                                    borderColorActive={COLORS.primary}
-                                    textColor={COLORS.onSurface}
-                                    placeholderTextColor={COLORS.onSurfaceVariant}
+                                    labelColor={colors.primaryContainer}
+                                    labelColorActive={colors.primary}
+                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorActive={colors.primary}
+                                    textColor={colors.onSurface}
+                                    placeholderTextColor={colors.onSurfaceVariant}
                                     error={errors.licenseExpiryDate}
                                     style={styles.fieldStyle}
                                     inputStyle={styles.inputStyle}
@@ -444,7 +449,7 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="calendar-month-outline"
                                             size={20}
-                                            color={COLORS.onSurfaceVariant}
+                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="License Expiry Date input"
@@ -457,6 +462,7 @@ const KYCScreen = () => {
                                 step="03"
                                 title="Aadhaar Card Photos"
                                 subtitle="Upload clear photos of both sides. Avoid glare and blur."
+                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.docRow}>
                                 <DocTile
@@ -465,6 +471,8 @@ const KYCScreen = () => {
                                     uri={images.aadhaarFront}
                                     onPick={handleImagePick('aadhaarFront')}
                                     error={docErrors.aadhaarFront}
+                                    colors={colors}
+                                    docStyles={docStyles}
                                 />
                                 <DocTile
                                     label="Aadhaar Back"
@@ -472,6 +480,8 @@ const KYCScreen = () => {
                                     uri={images.aadhaarBack}
                                     onPick={handleImagePick('aadhaarBack')}
                                     error={docErrors.aadhaarBack}
+                                    colors={colors}
+                                    docStyles={docStyles}
                                 />
                             </View>
                         </View>
@@ -481,6 +491,7 @@ const KYCScreen = () => {
                                 step="04"
                                 title="PAN & License Photos"
                                 subtitle="All four corners must be visible. JPG or JPEG only."
+                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.docRow}>
                                 <DocTile
@@ -489,6 +500,8 @@ const KYCScreen = () => {
                                     uri={images.pan}
                                     onPick={handleImagePick('pan')}
                                     error={docErrors.pan}
+                                    colors={colors}
+                                    docStyles={docStyles}
                                 />
                                 <DocTile
                                     label="Driving License"
@@ -496,30 +509,33 @@ const KYCScreen = () => {
                                     uri={images.license}
                                     onPick={handleImagePick('license')}
                                     error={docErrors.license}
+                                    colors={colors}
+                                    docStyles={docStyles}
                                 />
                             </View>
                         </View>
 
                         <View style={styles.disclaimer}>
-                            <MaterialCommunityIcons name="lock-outline" size={14} color={COLORS.onSurfaceVariant} />
+                            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.onSurfaceVariant}/>
                             <Text style={styles.disclaimerText}>
-                                Your data is encrypted with AES-256 and is only used for compliance verification. We never
-                                share it with third parties.
+                                Your data is encrypted with AES-256 and is only used for compliance verification. We
+                                never share it with third parties.
                             </Text>
                         </View>
+
                         <TouchableOpacity onPress={handleSubmit} activeOpacity={0.88} style={styles.ctaWrapper}>
                             <LinearGradient
-                                colors={[COLORS.primary, COLORS.primaryContainer]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
+                                colors={[colors.primary, colors.primaryContainer]}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 1}}
                                 style={styles.ctaGradient}
                             >
-                                <MaterialCommunityIcons name="shield-check" size={20} color="#fff" />
+                                <MaterialCommunityIcons name="shield-check" size={20} color="#fff"/>
                                 <Text style={styles.ctaText}>Submit for Verification</Text>
                             </LinearGradient>
                         </TouchableOpacity>
 
-                        <View style={{ height: 40 }} />
+                        <View style={{height: 40}}/>
                     </Animated.ScrollView>
                 </View>
             </LoadCard>
@@ -529,16 +545,15 @@ const KYCScreen = () => {
 
 export default KYCScreen;
 
-
-const styles = StyleSheet.create({
+const createStyles = ({colors, shadow}: ThemeType) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: colors.background,
         paddingBottom: 40,
     },
     root: {
         flex: 1,
-        backgroundColor: COLORS.surfaceContainerLowest,
+        backgroundColor: colors.surfaceContainerLowest,
     },
     header: {
         paddingTop: 32,
@@ -565,10 +580,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Manrope',
         fontSize: 34,
         fontWeight: '800',
-        color: '#fff',
+        color: colors.primary,
         lineHeight: 44,
         letterSpacing: -0.5,
-        // backgroundColor: 'red'
     },
     shieldBadge: {
         backgroundColor: 'rgba(255,255,255,0.1)',
@@ -592,21 +606,17 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 12,
         padding: 20,
-        shadowColor: 'rgba(26,28,46,0.08)',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 1,
-        shadowRadius: 32,
-        elevation: 3,
+        boxShadow: shadow.boxShadow
     },
     fieldGroup: {
         marginTop: 20,
         gap: 16,
     },
     fieldStyle: {
-        backgroundColor: COLORS.surfaceContainerLow,
+        backgroundColor: colors.surfaceContainer,
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 10,
@@ -624,7 +634,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 8,
-        backgroundColor: COLORS.surfaceContainerLow,
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 10,
         padding: 14,
     },
@@ -632,7 +642,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontFamily: 'Inter',
         fontSize: 11.5,
-        color: COLORS.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
         lineHeight: 17,
     },
     ctaWrapper: {
@@ -651,12 +661,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter',
         fontSize: 16,
         fontWeight: '700',
-        color: '#fff',
+        color: colors.onPrimary,
         letterSpacing: 0.3,
     },
 });
 
-const docStyles = StyleSheet.create({
+const createDocStyles = ({ colors }: ThemeType) => StyleSheet.create({
     wrapper: {
         flex: 1,
     },
@@ -665,21 +675,21 @@ const docStyles = StyleSheet.create({
         fontSize: 9.5,
         fontWeight: '700',
         letterSpacing: 1.8,
-        color: COLORS.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
         marginBottom: 6,
     },
     tile: {
         height: 130,
-        backgroundColor: COLORS.surfaceContainerLow,
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1.5,
-        borderColor: COLORS.outline,
+        borderColor: colors.outline,
         borderStyle: 'dashed',
     },
     tileError: {
-        borderColor: '#DC2626',
-        backgroundColor: '#FEF2F2',
+        borderColor: colors.error,
+        backgroundColor: colors.errorContainer,
     },
     preview: {
         width: '100%',
@@ -696,7 +706,7 @@ const docStyles = StyleSheet.create({
         fontFamily: 'Inter',
         fontSize: 11,
         fontWeight: '600',
-        color: '#fff',
+        color: colors.onPrimary,
     },
     placeholder: {
         flex: 1,
@@ -706,7 +716,7 @@ const docStyles = StyleSheet.create({
         padding: 10,
     },
     iconRing: {
-        backgroundColor: 'rgba(0,6,102,0.08)',
+        backgroundColor: colors.primaryFixed,
         borderRadius: 50,
         padding: 10,
         marginBottom: 2,
@@ -715,13 +725,13 @@ const docStyles = StyleSheet.create({
         fontFamily: 'Inter',
         fontSize: 11,
         fontWeight: '600',
-        color: COLORS.primary,
+        color: colors.primary,
         textAlign: 'center',
     },
     placeholderSub: {
         fontFamily: 'Inter',
         fontSize: 9.5,
-        color: COLORS.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
         letterSpacing: 0.5,
         textAlign: 'center',
     },
@@ -729,20 +739,20 @@ const docStyles = StyleSheet.create({
         fontFamily: 'Inter',
         fontSize: 11,
         fontWeight: '500',
-        color: '#DC2626',
+        color: colors.error,
         marginTop: 5,
         paddingHorizontal: 2,
     },
 });
 
-const sectionStyles = StyleSheet.create({
+const createSectionStyles = ({ colors }: ThemeType) => StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 14,
     },
     stepBadge: {
-        backgroundColor: COLORS.primary,
+        backgroundColor: colors.primary,
         borderRadius: 8,
         paddingHorizontal: 9,
         paddingVertical: 5,
@@ -752,21 +762,21 @@ const sectionStyles = StyleSheet.create({
         fontFamily: 'Manrope',
         fontSize: 11,
         fontWeight: '800',
-        color: COLORS.secondaryContainer,
+        color: colors.secondaryContainer,
         letterSpacing: 1,
     },
     title: {
         fontFamily: 'Manrope',
         fontSize: 17,
         fontWeight: '800',
-        color: COLORS.primary,
+        color: colors.primary,
         letterSpacing: -0.2,
         marginBottom: 3,
     },
     subtitle: {
         fontFamily: 'Inter',
         fontSize: 12,
-        color: COLORS.onSurfaceVariant,
+        color: colors.onSurfaceVariant,
         lineHeight: 17,
     },
 });

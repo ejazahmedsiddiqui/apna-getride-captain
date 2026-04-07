@@ -1,11 +1,12 @@
 import {StyleSheet, Text, TouchableOpacity, View, Platform} from "react-native";
 import React, {useMemo} from "react";
-import {useNavigation, useNavigationState, useTheme} from "@react-navigation/native";
+import {useNavigation, useNavigationState} from "@react-navigation/native";
 import {Home, Settings, User, UserCheck, UserPlusIcon} from "lucide-react-native";
 import {BlurView} from "expo-blur";
 import {LucideIcon} from "lucide-react-native";
 import {NativeStackNavigationProp} from "@react-navigation/native-stack";
 import {useUserContext} from "../context/UserContext";
+import {useAppTheme} from "../hooks/useAppTheme";
 
 type RouteName = keyof RootParamList;
 type RootParamList = {
@@ -46,8 +47,9 @@ const links: NavLink[] = [
 
 const Footer = ({blurTargetRef}: FooterProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
-    const {dark, colors} = useTheme();
-    const styles = useMemo(() => createStyles(colors as ThemeColors, dark), [colors, dark]);
+    const {theme,isDark} = useAppTheme();
+    const {colors} = theme;
+    const styles = useMemo(() => createStyles(colors as ThemeColors, isDark), [colors, isDark]);
     const { isAuthenticated} = useUserContext();
 
     const ActiveLinks = isAuthenticated
@@ -68,8 +70,8 @@ return (
         <BlurView
             style={styles.blurContainer}
             blurTarget={blurTargetRef}
-            intensity={dark ? 50 : 80}
-            tint={dark ? "dark" : "light"}
+            intensity={isDark ? 50 : 80}
+            tint={isDark ? "dark" : "light"}
             blurMethod="dimezisBlurViewSdk31Plus"
         >
             <View style={styles.tintOverlay} pointerEvents="none"/>
@@ -105,7 +107,7 @@ return (
 }
 ;
 
-const createStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
+const createStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create({
     wrapper: {
         position: 'absolute',
         bottom: 0,
@@ -120,12 +122,12 @@ const createStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
         paddingBottom: Platform.OS === 'android' ? 20 : 24,
         overflow: 'hidden',
         borderTopWidth: 0,
-        borderTopColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.6)',
+        borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.6)',
     },
     tintOverlay: {
         ...StyleSheet.absoluteFill,
-        backgroundColor: dark
-            ? 'rgba(10, 10, 10, 0.6)'
+        backgroundColor: isDark
+            ? 'rgba(10,10,10,0.8)'
             : 'rgba(255, 255, 255, 0.7)',
     },
     topBorder: {
@@ -134,7 +136,7 @@ const createStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
         left: 0,
         right: 0,
         height: 1,
-        backgroundColor: dark
+        backgroundColor: isDark
             ? 'rgba(255,255,255,0.12)'
             : 'rgba(255,255,255,0.6)',
     },
@@ -154,7 +156,7 @@ const createStyles = (colors: ThemeColors, dark: boolean) => StyleSheet.create({
         justifyContent: 'center',
     },
     iconWrapActive: {
-        backgroundColor: dark
+        backgroundColor: isDark
             ? 'rgba(255,255,255,0.22)'
             : 'rgba(0,0,0,0.17)',
         borderRadius: 12,
