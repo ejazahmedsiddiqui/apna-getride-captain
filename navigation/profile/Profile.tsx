@@ -1,11 +1,11 @@
-import React, { useState} from "react";
+import React, {useState} from "react";
 import {
     View,
     Text,
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    StatusBar, ActivityIndicator,
+    StatusBar,
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {
@@ -31,6 +31,7 @@ import {useUserContext} from "../../context/UserContext";
 import LoadCard from "../../components/LoadCard";
 import {useNavigation} from "@react-navigation/native";
 import {useAppTheme} from "../../hooks/useAppTheme";
+import ProfileSkeleton from '../../components/ProfileSkeleton';
 
 type MenuItemProps = {
     Icon: React.ComponentType<{ size?: number; color?: string }>;
@@ -45,7 +46,7 @@ function ProfileScreen() {
     const progress = useSharedValue(user?.accountStatus ? 1 : 0);
     const rotation = useSharedValue(0);
     const {theme, toggle, isDark} = useAppTheme();
-    const { colors, radius, spacing } = theme;
+    const {colors, radius, spacing} = theme;
 
     const handleToggle = () => {
         const next = !isOnline;
@@ -82,31 +83,7 @@ function ProfileScreen() {
 
     if (isLoadingProfile) {
         return (
-            <SafeAreaView style={[styles.safe,
-                {
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: 12
-                }]}>
-                <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
-                <View style={{
-                    backgroundColor: colors.surfaceContainerLow,
-                    borderRadius: radius.md,
-                    padding: spacing.gutterMobile,
-                }}>
-                    <TouchableOpacity onPress={toggle}>
-                        <Text style={{ color: colors.onSurface }}>
-                            {isDark ? '☀️ Light' : '🌙 Dark'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-                    <ActivityIndicator size={24} color={COLORS.primary}/>
-                    <Text style={{
-                        color: 'black',
-                        fontWeight: 'bold',
-                        fontSize: 16
-                    }}>Loading Profile...</Text>
-            </SafeAreaView>
+            <ProfileSkeleton/>
         )
     }
     return (
@@ -251,7 +228,7 @@ function ProfileScreen() {
                             padding: spacing.gutterMobile,
                         }}>
                             <TouchableOpacity onPress={toggle}>
-                                <Text style={{ color: colors.onSurface }}>
+                                <Text style={{color: colors.onSurface}}>
                                     {isDark ? '☀️ Light' : '🌙 Dark'}
                                 </Text>
                             </TouchableOpacity>
@@ -264,11 +241,11 @@ function ProfileScreen() {
         ;
 }
 
-const MenuItem = React.memo(({ Icon, label, badge }: MenuItemProps)=> {
+const MenuItem = React.memo(({Icon, label, badge}: MenuItemProps) => {
     return (
         <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
             <View style={styles.menuIconBox}>
-                <Icon size={22} color={COLORS.primary} />
+                <Icon size={22} color={COLORS.primary}/>
             </View>
             <Text style={styles.menuLabel}>{label}</Text>
             <View style={styles.menuRight}>
