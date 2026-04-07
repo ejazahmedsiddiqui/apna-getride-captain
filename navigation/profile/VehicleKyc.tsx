@@ -1,0 +1,655 @@
+import React, {useMemo, useState} from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Image,
+    Alert,
+    StatusBar, ScrollView,
+} from 'react-native';
+import {MaterialCommunityIcons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import RenderFormField from '../../components/RenderFormField';
+import Animated, {
+    useSharedValue,
+    useAnimatedScrollHandler,
+} from 'react-native-reanimated';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import LoadCard from '../../components/LoadCard';
+import {useAppTheme} from '../../hooks/useAppTheme';
+import {AppColors, AppTheme} from '../../theme';
+import {Bandage} from "lucide-react-native";
+
+type ThemeType = {
+    theme: AppTheme;
+    colors: AppColors;
+    isDark: boolean;
+    shadow:  {
+        boxShadow: string;
+    }
+};
+
+type DocKey = 'aadhaarFront' | 'aadhaarBack' | 'pan' | 'license';
+type VehicleType = 'BIKE' | 'CAR' | 'AUTO'
+
+interface KYCFormState {
+    aadhaarNumber: string;
+    panNumber: string;
+    licenseNumber: string;
+    licenseExpiryDate: string;
+}
+
+interface KYCErrors {
+    aadhaarNumber: string;
+    panNumber: string;
+    licenseNumber: string;
+    licenseExpiryDate: string;
+}
+
+const pickImage = async (fromCamera: boolean): Promise<string | null> => {
+    const permFn = fromCamera
+        ? ImagePicker.requestCameraPermissionsAsync
+        : ImagePicker.requestMediaLibraryPermissionsAsync;
+
+    const {status} = await permFn();
+    if (status !== 'granted') {
+        Alert.alert(
+            'Permission Required',
+            `Please allow ${fromCamera ? 'camera' : 'gallery'} access in your device settings.`,
+        );
+        return null;
+    }
+
+    const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+            allowsEditing: true,
+            aspect: [4, 3],
+        })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+            allowsEditing: true,
+            aspect: [4, 3],
+        });
+
+    if (!result.canceled && result.assets.length > 0) {
+        return result.assets[0].uri;
+    }
+    return null;
+};
+
+interface DocTileProps {
+    label: string;
+    icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+    uri: string | null;
+    onPick: (fromCamera: boolean) => void;
+    error?: string;
+    colors: AppColors;
+    docStyles: ReturnType<typeof createDocStyles>;
+}
+
+const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error, colors, docStyles}) => {
+    const showPickerOptions = () => {
+        Alert.alert(label, 'Choose image source', [
+            {text: 'Camera', onPress: () => onPick(true)},
+            {text: 'Gallery', onPress: () => onPick(false)},
+            {text: 'Cancel', style: 'cancel'},
+        ]);
+    };
+
+    return (
+        <View style={docStyles.wrapper}>
+            <Text style={docStyles.metaLabel}>{label.toUpperCase()}</Text>
+            <TouchableOpacity
+                style={[docStyles.tile, error ? docStyles.tileError : null]}
+                onPress={showPickerOptions}
+                activeOpacity={0.8}
+                accessibilityLabel={`Upload ${label}`}
+            >
+                {uri ? (
+                    <>
+                        <Image source={{uri}} style={docStyles.preview} resizeMode="cover"/>
+                        <View style={docStyles.reuploadOverlay}>
+                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff"/>
+                            <Text style={docStyles.reuploadText}>Replace</Text>
+                        </View>
+                    </>
+                ) : (
+                    <View style={docStyles.placeholder}>
+                        <View style={docStyles.iconRing}>
+                            <MaterialCommunityIcons name={icon} size={28} color={colors.primary}/>
+                        </View>
+                        <Text style={docStyles.placeholderTitle}>Upload Document</Text>
+                        <Text style={docStyles.placeholderSub}>Camera · JPG · JPEG</Text>
+                    </View>
+                )}
+            </TouchableOpacity>
+            {error ? <Text style={docStyles.errorText}>{error}</Text> : null}
+        </View>
+    );
+};
+
+interface SectionHeaderProps {
+    step: string;
+    title: string;
+    subtitle: string;
+    sectionStyles: ReturnType<typeof createSectionStyles>;
+}
+
+const SectionHeader: React.FC<SectionHeaderProps> = ({step, title, subtitle, sectionStyles}) => (
+    <View style={sectionStyles.row}>
+        <View style={sectionStyles.stepBadge}>
+            <Text style={sectionStyles.stepText}>{step}</Text>
+        </View>
+        <View style={{flex: 1}}>
+            <Text style={sectionStyles.title}>{title}</Text>
+            <Text style={sectionStyles.subtitle}>{subtitle}</Text>
+        </View>
+    </View>
+);
+
+const VehicleKYCScreen = () => {
+    const {theme, isDark} = useAppTheme();
+    const {colors, shadow} = theme;
+
+    const [vehicle, setVehicle] = useState({
+        file: '',
+        type: '',
+        number: '',
+        model: '',
+        color: '',
+    })
+    const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+    const docStyles = useMemo(() => createDocStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+    const sectionStyles = useMemo(() => createSectionStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
+
+    const [form, setForm] = useState<KYCFormState>({
+        aadhaarNumber: '',
+        panNumber: '',
+        licenseNumber: '',
+        licenseExpiryDate: '',
+    });
+
+    const [errors, setErrors] = useState<KYCErrors>({
+        aadhaarNumber: '',
+        panNumber: '',
+        licenseNumber: '',
+        licenseExpiryDate: '',
+    });
+
+    const scrollY = useSharedValue(0);
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            scrollY.value = event.contentOffset.y;
+        },
+    });
+
+    const [docErrors, setDocErrors] = useState<Partial<Record<DocKey, string>>>({});
+
+    const [images, setImages] = useState<Record<DocKey, string | null>>({
+        aadhaarFront: null,
+        aadhaarBack: null,
+        pan: null,
+        license: null,
+    });
+
+    const setField = (key: keyof KYCFormState) => (value: string) => {
+        setForm(prev => ({...prev, [key]: value}));
+        if (errors[key]) setErrors(prev => ({...prev, [key]: ''}));
+    };
+
+    const handleImagePick = (docKey: DocKey) => async (fromCamera: boolean) => {
+        const uri = await pickImage(fromCamera);
+        if (uri) {
+            setImages(prev => ({...prev, [docKey]: uri}));
+            setDocErrors(prev => ({...prev, [docKey]: ''}));
+        }
+    };
+
+    const validate = (): boolean => {
+        const newErrors: KYCErrors = {aadhaarNumber: '', panNumber: '', licenseNumber: '', licenseExpiryDate: ''};
+        const newDocErrors: Partial<Record<DocKey, string>> = {};
+        let valid = true;
+
+        if (form.aadhaarNumber.length !== 12) {
+            newErrors.aadhaarNumber = 'Aadhaar must be exactly 12 digits.';
+            valid = false;
+        }
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        if (!panRegex.test(form.panNumber.toUpperCase())) {
+            newErrors.panNumber = 'Enter a valid PAN (e.g. ABCDE1234F).';
+            valid = false;
+        }
+        if (form.licenseNumber.trim().length < 5) {
+            newErrors.licenseNumber = 'Enter a valid driving license number.';
+            valid = false;
+        }
+        const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+        if (!dateRegex.test(form.licenseExpiryDate)) {
+            newErrors.licenseExpiryDate = 'Enter date in DD/MM/YYYY format.';
+            valid = false;
+        }
+
+        (['aadhaarFront', 'aadhaarBack', 'pan', 'license'] as DocKey[]).forEach(key => {
+            if (!images[key]) {
+                newDocErrors[key] = 'Document image is required.';
+                valid = false;
+            }
+        });
+
+        setErrors(newErrors);
+        setDocErrors(newDocErrors);
+        return valid;
+    };
+
+    const handleSubmit = () => {
+        if (!validate()) return;
+        Alert.alert('KYC Submitted', "Your documents are under review. We'll notify you within 24 hours.", [
+            {text: 'Got it'},
+        ]);
+    };
+    return (
+        <SafeAreaView style={styles.container}>
+            <StatusBar
+                barStyle={isDark ? 'light-content' : 'dark-content'}
+                backgroundColor={colors.surfaceContainerLow}
+            />
+            <LoadCard>
+                <View style={styles.root}>
+                    <ScrollView
+                        style={styles.scroll}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.header}>
+                            <View style={styles.headerInner}>
+                                <View style={{flex: 1}}>
+                                    <Text style={styles.headerEyebrow}>
+                                        VEHICLE IDENTIFICATION
+                                    </Text>
+                                    <Text style={styles.headerTitle}>
+                                        Complete Vehicle KYC
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text style={styles.headerSubtitle}>
+                                Your documents are encrypted and reviewed by our compliance team within 24 hrs.
+                            </Text>
+                        </View>
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="01"
+                                title="Vehicle Number"
+                                subtitle="Enter your RTO issued Vehicle Number"
+                                sectionStyles={sectionStyles}
+                            />
+                            <View style={styles.fieldGroup}>
+                                <RenderFormField
+                                    label="Vehicle Number"
+                                    value={form.aadhaarNumber}
+                                    onChangeText={setField('aadhaarNumber')}
+                                    placeholder="DL01AX9876 (No Space)"
+                                    inputType="alphanumeric"
+                                    maxLength={10}
+                                    labelColor={colors.primaryContainer}
+                                    labelColorActive={colors.primary}
+                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorActive={colors.primary}
+                                    textColor={colors.onSurface}
+                                    placeholderTextColor={colors.onSurfaceVariant}
+                                    error={errors.aadhaarNumber}
+                                    style={styles.fieldStyle}
+                                    inputStyle={styles.inputStyle}
+                                    icon={
+                                        <Bandage
+                                            size={20}
+                                            color={colors.onSurfaceVariant}
+                                        />
+                                    }
+                                    accessibilityLabel="Aadhaar Number input"
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="02"
+                                title="Vehicle Type"
+                                subtitle="Select your Vehicle Type"
+                                sectionStyles={sectionStyles}
+                            />
+                            <View style={styles.fieldGroup}>
+
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="03"
+                                title="Aadhaar Card Photos"
+                                subtitle="Upload clear photos of both sides. Avoid glare and blur."
+                                sectionStyles={sectionStyles}
+                            />
+                            <View style={styles.docRow}>
+                                <DocTile
+                                    label="Aadhaar Front"
+                                    icon="card-account-details-outline"
+                                    uri={images.aadhaarFront}
+                                    onPick={handleImagePick('aadhaarFront')}
+                                    error={docErrors.aadhaarFront}
+                                    colors={colors}
+                                    docStyles={docStyles}
+                                />
+                                <DocTile
+                                    label="Aadhaar Back"
+                                    icon="card-account-details-star-outline"
+                                    uri={images.aadhaarBack}
+                                    onPick={handleImagePick('aadhaarBack')}
+                                    error={docErrors.aadhaarBack}
+                                    colors={colors}
+                                    docStyles={docStyles}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.card}>
+                            <SectionHeader
+                                step="04"
+                                title="PAN & License Photos"
+                                subtitle="All four corners must be visible. JPG or JPEG only."
+                                sectionStyles={sectionStyles}
+                            />
+                            <View style={styles.docRow}>
+                                <DocTile
+                                    label="PAN Card"
+                                    icon="identifier"
+                                    uri={images.pan}
+                                    onPick={handleImagePick('pan')}
+                                    error={docErrors.pan}
+                                    colors={colors}
+                                    docStyles={docStyles}
+                                />
+                                <DocTile
+                                    label="Driving License"
+                                    icon="card-bulleted-outline"
+                                    uri={images.license}
+                                    onPick={handleImagePick('license')}
+                                    error={docErrors.license}
+                                    colors={colors}
+                                    docStyles={docStyles}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={styles.disclaimer}>
+                            <MaterialCommunityIcons name="lock-outline" size={14} color={colors.onSurfaceVariant}/>
+                            <Text style={styles.disclaimerText}>
+                                Your data is encrypted with AES-256 and is only used for compliance verification. We
+                                never share it with third parties.
+                            </Text>
+                        </View>
+
+                        <TouchableOpacity onPress={handleSubmit} activeOpacity={0.88} style={styles.ctaWrapper}>
+                            <LinearGradient
+                                colors={[colors.primary, colors.primaryContainer]}
+                                start={{x: 0, y: 0}}
+                                end={{x: 1, y: 1}}
+                                style={styles.ctaGradient}
+                            >
+                                <MaterialCommunityIcons name="shield-check" size={20} color="#fff"/>
+                                <Text style={styles.ctaText}>Submit for Verification</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <View style={{height: 40}}/>
+                    </ScrollView>
+                </View>
+            </LoadCard>
+        </SafeAreaView>
+    );
+};
+
+export default VehicleKYCScreen;
+
+const createStyles = ({colors, shadow}: ThemeType) => StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingBottom: 40,
+    },
+    root: {
+        flex: 1,
+        backgroundColor: colors.surfaceContainerLowest,
+    },
+    header: {
+        paddingTop: 32,
+        paddingBottom: 16,
+        paddingHorizontal: 24,
+        overflow: 'hidden',
+        justifyContent: 'flex-end',
+        experimental_backgroundImage: "linear-gradient(to top, rgba(0,6,102,0.92) 0%, rgba(0,6,102,0.5) 100%)",
+    },
+    headerInner: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    headerEyebrow: {
+        fontFamily: 'Inter',
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 2.5,
+        color: 'rgba(255,255,255,0.55)',
+        marginBottom: 6,
+    },
+    headerTitle: {
+        fontFamily: 'Manrope',
+        fontSize: 28,
+        fontWeight: '800',
+        color: colors.primary,
+        lineHeight: 44,
+        letterSpacing: -0.5,
+    },
+    shieldBadge: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 20,
+        padding: 14,
+    },
+    headerSubtitle: {
+        fontFamily: 'Inter',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.65)',
+        lineHeight: 19,
+        marginBottom: 20,
+        maxWidth: '85%',
+    },
+    scroll: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingTop: 20,
+        gap: 16,
+    },
+    card: {
+        backgroundColor: colors.surfaceContainerLow,
+        marginHorizontal: 12,
+        borderRadius: 12,
+        padding: 20,
+        boxShadow: shadow.boxShadow
+    },
+    fieldGroup: {
+        marginTop: 20,
+        gap: 16,
+    },
+    fieldStyle: {
+        backgroundColor: colors.surfaceContainer,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    inputStyle: {
+        backgroundColor: 'transparent',
+        fontSize: 15,
+    },
+    docRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 20,
+    },
+    disclaimer: {
+        marginHorizontal: 12,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8,
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: 10,
+        padding: 14,
+    },
+    disclaimerText: {
+        flex: 1,
+        fontFamily: 'Inter',
+        fontSize: 11.5,
+        color: colors.onSurfaceVariant,
+        lineHeight: 17,
+    },
+    ctaWrapper: {
+        marginHorizontal: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    ctaGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+    },
+    ctaText: {
+        fontFamily: 'Inter',
+        fontSize: 16,
+        fontWeight: '700',
+        color: colors.onPrimary,
+        letterSpacing: 0.3,
+    },
+});
+
+const createDocStyles = ({ colors }: ThemeType) => StyleSheet.create({
+    wrapper: {
+        flex: 1,
+    },
+    metaLabel: {
+        fontFamily: 'Inter',
+        fontSize: 9.5,
+        fontWeight: '700',
+        letterSpacing: 1.8,
+        color: colors.onSurfaceVariant,
+        marginBottom: 6,
+    },
+    tile: {
+        height: 130,
+        backgroundColor: colors.surfaceContainerLow,
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: colors.outline,
+        borderStyle: 'dashed',
+    },
+    tileError: {
+        borderColor: colors.error,
+        backgroundColor: colors.errorContainer,
+    },
+    preview: {
+        width: '100%',
+        height: '100%',
+    },
+    reuploadOverlay: {
+        ...StyleSheet.absoluteFill,
+        backgroundColor: 'rgba(0,6,102,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+    },
+    reuploadText: {
+        fontFamily: 'Inter',
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.onPrimary,
+    },
+    placeholder: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        padding: 10,
+    },
+    iconRing: {
+        backgroundColor: colors.primaryFixed,
+        borderRadius: 50,
+        padding: 10,
+        marginBottom: 2,
+    },
+    placeholderTitle: {
+        fontFamily: 'Inter',
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.primary,
+        textAlign: 'center',
+    },
+    placeholderSub: {
+        fontFamily: 'Inter',
+        fontSize: 9.5,
+        color: colors.onSurfaceVariant,
+        letterSpacing: 0.5,
+        textAlign: 'center',
+    },
+    errorText: {
+        fontFamily: 'Inter',
+        fontSize: 11,
+        fontWeight: '500',
+        color: colors.error,
+        marginTop: 5,
+        paddingHorizontal: 2,
+    },
+});
+
+const createSectionStyles = ({ colors }: ThemeType) => StyleSheet.create({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 14,
+    },
+    stepBadge: {
+        backgroundColor: colors.primary,
+        borderRadius: 8,
+        paddingHorizontal: 9,
+        paddingVertical: 5,
+        marginTop: 2,
+    },
+    stepText: {
+        fontFamily: 'Manrope',
+        fontSize: 11,
+        fontWeight: '800',
+        color: colors.secondaryContainer,
+        letterSpacing: 1,
+    },
+    title: {
+        fontFamily: 'Manrope',
+        fontSize: 17,
+        fontWeight: '800',
+        color: colors.primary,
+        letterSpacing: -0.2,
+        marginBottom: 3,
+    },
+    subtitle: {
+        fontFamily: 'Inter',
+        fontSize: 12,
+        color: colors.onSurfaceVariant,
+        lineHeight: 17,
+    },
+});

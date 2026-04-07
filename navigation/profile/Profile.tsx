@@ -207,7 +207,7 @@ function ProfileScreen() {
                             <MenuItem Icon={CarTaxiFront} label="Vehicle Information" colors={colors} styles={styles}
                                       onPress={() => navigation.navigate('VehicleInfo')}/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={CreditCard} label="Payment Methods" colors={colors} styles={styles}/>
+                            <MenuItem Icon={CreditCard} label="Payment Methods" colors={colors} styles={styles} onPress={() => navigation.navigate('VehicleKYC')}/>
                             <View style={styles.menuDivider}/>
                             <MenuItem Icon={TicketPercent} label="Promotions" badge={2} colors={colors}
                                       styles={styles}/>
