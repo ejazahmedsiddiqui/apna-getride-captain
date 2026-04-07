@@ -8,6 +8,7 @@ import Layout from '../components/Layout';
 import ProfileKycScreen from "./profile/ProfileKyc";
 import {useUserContext} from '../context/UserContext';
 import VehicleInfoScreen from "./profile/VehicleInfo";
+import VehicleKYCScreen from "./profile/VehicleKyc";
 
 function useIsAuthenticated() {
     const {token} = useUserContext();
@@ -23,6 +24,7 @@ const RootStack = createNativeStackNavigator({
                     screen: (props) => <Layout><ProfileScreen {...props} /></Layout>,
                 },
                 VehicleInfo: VehicleInfoScreen,
+                VehicleKYC: VehicleKYCScreen,
                 Settings: {
                     screen: (props) => <Layout><SettingsScreen {...props} /></Layout>,
                 },
