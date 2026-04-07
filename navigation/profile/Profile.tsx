@@ -1,107 +1,114 @@
-import React, {useState} from "react";
+import React, {useMemo, useState} from "react";
 import {
     View,
     Text,
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    StatusBar,
+    StatusBar, Switch, Image,
 } from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {
     User,
+    CarTaxiFront,
     CreditCard,
-    RefreshCcw,
     Star,
     TicketPercent,
     ShieldPlus,
     MessageCircleQuestionMark,
     Settings,
     BellRing,
+    BellOff, Wifi, WifiOff, Sun, Moon
 } from 'lucide-react-native';
-import Animated, {
-    withTiming,
-    useSharedValue,
-    useAnimatedStyle,
-    interpolateColor,
-    Easing,
-} from "react-native-reanimated";
-import {COLORS} from '../../utils/COLORS';
 import {useUserContext} from "../../context/UserContext";
 import LoadCard from "../../components/LoadCard";
 import {useNavigation} from "@react-navigation/native";
 import {useAppTheme} from "../../hooks/useAppTheme";
 import ProfileSkeleton from '../../components/ProfileSkeleton';
+import {AppColors, AppTheme} from "../../theme";
+
+type ThemeType = {
+    theme: AppTheme;
+    colors: AppColors;
+    isDark?: boolean;
+    shadow?: { boxShadow: string; }
+};
 
 type MenuItemProps = {
     Icon: React.ComponentType<{ size?: number; color?: string }>;
     label: string;
     badge?: number;
+    colors: AppColors;
+    styles: ReturnType<typeof createStyles>;
+    onPress?: () => void;
 };
+
+const MenuItem = React.memo(({Icon, label, badge, colors, styles, onPress}: MenuItemProps) => {
+    return (
+        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={onPress}>
+            <View style={styles.menuIconBox}>
+                <Icon size={22} color={colors.primary}/>
+            </View>
+            <Text style={styles.menuLabel}>{label}</Text>
+            <View style={styles.menuRight}>
+                {badge !== undefined && (
+                    <View style={styles.badgeCircle}>
+                        <Text style={styles.badgeText}>{badge}</Text>
+                    </View>
+                )}
+                <Text style={styles.chevron}>›</Text>
+            </View>
+        </TouchableOpacity>
+    );
+});
 
 function ProfileScreen() {
     const {user, logout, isLoadingProfile} = useUserContext();
     const navigation = useNavigation();
-    const [isOnline, setIsOnline] = useState<boolean>(true);
-    const progress = useSharedValue(user?.accountStatus ? 1 : 0);
-    const rotation = useSharedValue(0);
-    const {theme, toggle, isDark} = useAppTheme();
-    const {colors, radius, spacing} = theme;
 
-    const handleToggle = () => {
-        const next = !isOnline;
-        setIsOnline(next);
-        progress.value = withTiming(next ? 1 : 0, {
-            duration: 400,
-            easing: Easing.out(Easing.cubic),
-        });
-        rotation.value = withTiming(rotation.value - 180, {
-            duration: 800,
-            easing: Easing.inOut(Easing.cubic),
-        });
-    };
+    const [enabled, setEnabled] = useState(false);
 
-    const animatedBannerStyle = useAnimatedStyle(() => ({
-        backgroundColor: interpolateColor(
-            progress.value,
-            [0, 1],
-            [COLORS.primaryContainer, COLORS.secondary],
-        ),
-    }));
+    const [getNotification, setGetNotification] = useState<boolean>(true);
 
-    const animatedBtnStyle = useAnimatedStyle(() => ({
-        backgroundColor: interpolateColor(
-            progress.value,
-            [0, 1],
-            [COLORS.secondary, COLORS.error],
-        ),
-    }));
-
-    const animatedIconStyle = useAnimatedStyle(() => ({
-        transform: [{rotate: `${rotation.value}deg`}],
-    }));
+    const {theme, toggle: toggleTheme, isDark} = useAppTheme();
+    const {colors, shadow} = theme;
+    const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
 
     if (isLoadingProfile) {
-        return (
-            <ProfileSkeleton/>
-        )
+        return <ProfileSkeleton/>;
     }
+
     return (
         <SafeAreaView style={styles.safe}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
+            <StatusBar
+                barStyle={isDark ? 'light-content' : 'dark-content'}
+                backgroundColor={colors.surfaceContainerLow}
+            />
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.avatarCircle}>
-                        <User size={22} color={COLORS.primary}/>
+                        {!user?.profileImage
+                            ? <User size={22} color={colors.primary}/>
+                            : <Image
+                                source={{uri: user.profileImage}} resizeMethod={'resize'}
+                                height={40}
+                                width={40}
+                                borderRadius={15}
+                            />
+                        }
                     </View>
-                    <Text style={styles.brandName}>Fluid Authority</Text>
+                    <Text style={styles.brandName}>Captain's Domain</Text>
                 </View>
-                <TouchableOpacity style={styles.bellBtn}>
-                    <BellRing size={22} color={COLORS.primary}/>
+                <TouchableOpacity
+                    style={styles.bellBtn}
+                    onPress={() => setGetNotification(!getNotification)}
+                >
+                    {getNotification
+                        ? <BellRing size={22} color={colors.primary}/>
+                        : <BellOff size={22} color={colors.primaryContainer}/>}
                 </TouchableOpacity>
             </View>
             <LoadCard>
-
                 <ScrollView
                     style={styles.scroll}
                     contentContainerStyle={styles.scrollContent}
@@ -114,11 +121,9 @@ function ProfileScreen() {
                                 <Text style={styles.eliteLabel}>
                                     {'gold'.toUpperCase()} MEMBER
                                 </Text>
-
                                 <Text style={styles.userName}>
                                     {user?.fullName || 'Apna GetRide Captain'}
                                 </Text>
-
                                 <View style={styles.ratingRow}>
                                     <Star size={16} fill={'gold'} color={'gold'}/>
                                     <Text style={styles.ratingText}>
@@ -126,7 +131,6 @@ function ProfileScreen() {
                                     </Text>
                                 </View>
                             </View>
-
                             <View style={styles.goldBadge}>
                                 <Text style={styles.goldText}>
                                     {'gold'.toUpperCase()}
@@ -141,9 +145,7 @@ function ProfileScreen() {
                                 </Text>
                                 <Text style={styles.statLabel}>TOTAL TRIPS</Text>
                             </View>
-
                             <View style={styles.statDivider}/>
-
                             <View style={styles.statItem}>
                                 <Text style={styles.statValue}>
                                     {user?.rating}
@@ -152,45 +154,74 @@ function ProfileScreen() {
                             </View>
                         </View>
                     </View>
-                    {/* Switch to Driver Banner */}
-                    <Animated.View style={[styles.driverBanner, animatedBannerStyle]}>
-                        <View style={styles.switchIconCircle}>
-                            <TouchableOpacity onPress={handleToggle}>
-                                <Animated.View style={animatedIconStyle}>
-                                    <RefreshCcw size={22} color={'#fff'}/>
-                                </Animated.View>
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.switchTitle}>Switch to {isOnline ? 'Offline' : 'Online'}</Text>
-                        <Text
-                            style={styles.switchSubtitle}>{isOnline ? 'You will not receive rides after going offline' : 'Go online to start earning'}</Text>
-                        <TouchableOpacity activeOpacity={0.85} onPress={handleToggle}>
-                            <Animated.View style={[styles.goOnlineBtn, animatedBtnStyle]}>
-                                <Text style={styles.goOnlineText}>GO {isOnline ? 'OFFLINE' : 'ONLINE'}</Text>
-                            </Animated.View>
-                        </TouchableOpacity>
-                    </Animated.View>
+
                     {/* Account Settings */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Account Settings</Text>
                         <View style={styles.menuGroup}>
-                            <MenuItem Icon={User} label="Personal Information"/>
+                            <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+                                <View style={styles.menuIconBox}>
+                                    {enabled
+                                        ? <Wifi size={22} color={colors.primary}/>
+                                        : <WifiOff size={22} color={colors.primary}/>}
+                                </View>
+                                <Text style={styles.menuLabel}>{enabled ? 'Online' : 'Offline'}</Text>
+                                <View style={styles.menuRight}>
+                                    <Switch
+                                        accessible={true}
+                                        accessibilityLabel={enabled ? 'Press to Go offline' : 'Press to Go Online'}
+                                        value={enabled}
+                                        onValueChange={setEnabled}
+                                        trackColor={{
+                                            false: colors.tertiary ?? 'red',
+                                            true: colors.secondary ?? 'green'
+                                        }}
+                                        thumbColor={enabled ? 'green' : colors.tertiary ?? 'red'}
+                                    />
+                                </View>
+                            </TouchableOpacity>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={CreditCard} label="Payment Methods"/>
+                            <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+                                <View style={styles.menuIconBox}>
+                                    {!isDark
+                                        ? <Sun size={22} color={colors.primary}/>
+                                        : <Moon size={22} color={colors.primary}/>}
+                                </View>
+                                <Text
+                                    style={styles.menuLabel}>{!isDark ? 'Turn on Dark Mode' : 'Turn on Light Mode'}</Text>
+                                <View style={styles.menuRight}>
+                                    <Switch
+                                        accessible={true}
+                                        accessibilityLabel={!isDark ? 'Turn on Dark Mode' : 'Turn on Light Mode'}
+                                        value={isDark}
+                                        onValueChange={toggleTheme}
+                                        trackColor={{
+                                            false: 'grey',
+                                            true: 'white'
+                                        }}
+                                        thumbColor={isDark ? colors.tertiary : 'grey'}
+                                    />
+                                </View>
+                            </TouchableOpacity>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={TicketPercent} label="Promotions"
-                                      badge={2}/>
+                            <MenuItem Icon={CarTaxiFront} label="Vehicle Information" colors={colors} styles={styles}
+                                      onPress={() => navigation.navigate('VehicleInfo')}/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem Icon={CreditCard} label="Payment Methods" colors={colors} styles={styles}/>
+                            <View style={styles.menuDivider}/>
+                            <MenuItem Icon={TicketPercent} label="Promotions" badge={2} colors={colors}
+                                      styles={styles}/>
                         </View>
                     </View>
+
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Security &amp; Help</Text>
                         <View style={styles.menuGroup}>
-                            <MenuItem Icon={ShieldPlus} label="Safety Center"/>
+                            <MenuItem Icon={ShieldPlus} label="Safety Center" colors={colors} styles={styles}/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={MessageCircleQuestionMark}
-                                      label="Support"/>
+                            <MenuItem Icon={MessageCircleQuestionMark} label="Support" colors={colors} styles={styles}/>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={Settings} label="Settings"/>
+                            <MenuItem Icon={Settings} label="Settings" colors={colors} styles={styles}/>
                         </View>
                     </View>
 
@@ -218,63 +249,35 @@ function ProfileScreen() {
                                 <Text style={styles.footerLink}>Terms of Service</Text>
                             </TouchableOpacity>
                         </View>
-                        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Check KYC"
-                                          onPress={() => navigation.navigate('Kyc')}>
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            accessibilityLabel="Check KYC"
+                            onPress={() => navigation.navigate('Kyc')}
+                        >
                             <Text style={styles.footerLink}>check your KYC here</Text>
                         </TouchableOpacity>
-                        <View style={{
-                            backgroundColor: colors.surfaceContainerLow,
-                            borderRadius: radius.md,
-                            padding: spacing.gutterMobile,
-                        }}>
-                            <TouchableOpacity onPress={toggle}>
-                                <Text style={{color: colors.onSurface}}>
-                                    {isDark ? '☀️ Light' : '🌙 Dark'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 </ScrollView>
             </LoadCard>
         </SafeAreaView>
-    )
-        ;
+    );
 }
 
-const MenuItem = React.memo(({Icon, label, badge}: MenuItemProps) => {
-    return (
-        <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
-            <View style={styles.menuIconBox}>
-                <Icon size={22} color={COLORS.primary}/>
-            </View>
-            <Text style={styles.menuLabel}>{label}</Text>
-            <View style={styles.menuRight}>
-                {badge !== undefined && (
-                    <View style={styles.badgeCircle}>
-                        <Text style={styles.badgeText}>{badge}</Text>
-                    </View>
-                )}
-                <Text style={styles.chevron}>›</Text>
-            </View>
-        </TouchableOpacity>
-    );
-})
-
-const styles = StyleSheet.create({
+const createStyles = ({colors, shadow}: ThemeType) => StyleSheet.create({
     safe: {
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: colors.background,
         paddingBottom: 40,
     },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: "#fff",
+        backgroundColor: colors.surfaceContainerLow,
         paddingHorizontal: 18,
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: "#eee",
+        borderBottomColor: colors.outlineVariant,
     },
     headerLeft: {
         flexDirection: "row",
@@ -282,17 +285,14 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     avatarCircle: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#eee',
+        backgroundColor: colors.surfaceContainerHigh,
         alignItems: "center",
         justifyContent: "center",
     },
     brandName: {
         fontSize: 17,
         fontWeight: "700",
-        color: COLORS.primary,
+        color: colors.primary,
         letterSpacing: 0.2,
     },
     bellBtn: {
@@ -310,10 +310,10 @@ const styles = StyleSheet.create({
 
     // Profile Card
     profileCard: {
-        backgroundColor: "#fff",
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 16,
         padding: 20,
-        boxShadow: '0px 10px 20px rgba(0,0,0,0.2)'
+        boxShadow: shadow?.boxShadow
     },
     profileCardTop: {
         flexDirection: "row",
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     },
     eliteLabel: {
         fontSize: 11,
-        color: "#999",
+        color: colors.onSurfaceVariant,
         fontWeight: "600",
         letterSpacing: 1.2,
         marginBottom: 4,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     userName: {
         fontSize: 26,
         fontWeight: "800",
-        color: "#111",
+        color: colors.onSurface,
         marginBottom: 6,
     },
     ratingRow: {
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     },
     ratingText: {
         fontSize: 14,
-        color: "#444",
+        color: colors.onSurfaceVariant,
         fontWeight: "600",
     },
     goldBadge: {
@@ -367,11 +367,11 @@ const styles = StyleSheet.create({
     statValue: {
         fontSize: 26,
         fontWeight: "800",
-        color: "#111",
+        color: colors.onSurface,
     },
     statLabel: {
         fontSize: 11,
-        color: "#999",
+        color: colors.onSurfaceVariant,
         fontWeight: "600",
         letterSpacing: 0.8,
         marginTop: 2,
@@ -379,17 +379,16 @@ const styles = StyleSheet.create({
     statDivider: {
         width: 1,
         height: 36,
-        backgroundColor: "#e5e5e5",
+        backgroundColor: colors.outlineVariant,
         marginRight: 24,
     },
 
     // Driver Banner
     driverBanner: {
-
         borderRadius: 16,
         padding: 24,
         alignItems: "center",
-        boxShadow: '0px 10px 20px rgba(0,0,0,0.3)'
+        boxShadow: '0px 10px 20px rgba(0,0,0,0.3)',
     },
     switchIconCircle: {
         width: 52,
@@ -401,7 +400,7 @@ const styles = StyleSheet.create({
         marginBottom: 14,
     },
     switchTitle: {
-        color: "#fff",
+        color: colors.onPrimary,
         fontSize: 18,
         fontWeight: "700",
         marginBottom: 4,
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     goOnlineText: {
-        color: "#fff",
+        color: colors.onPrimary,
         fontWeight: "800",
         fontSize: 15,
         letterSpacing: 1.2,
@@ -432,14 +431,14 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 15,
         fontWeight: "700",
-        color: COLORS.primary,
+        color: colors.primary,
         marginLeft: 2,
     },
     menuGroup: {
-        backgroundColor: "#fff",
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 14,
         overflow: "hidden",
-        boxShadow: '0px 10px 20px rgba(0,0,0,0.1)'
+        boxShadow: '0px 10px 20px rgba(0,0,0,0.1)',
     },
     menuItem: {
         flexDirection: "row",
@@ -450,21 +449,21 @@ const styles = StyleSheet.create({
     },
     menuDivider: {
         height: 1,
-        backgroundColor: "rgba(214,214,214,0.7)",
+        backgroundColor: colors.outlineVariant,
         marginHorizontal: 56 / 2,
     },
     menuIconBox: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: "#f0f0f5",
+        backgroundColor: colors.surfaceContainerHigh,
         alignItems: "center",
         justifyContent: "center",
     },
     menuLabel: {
         flex: 1,
         fontSize: 15,
-        color: "#222",
+        color: colors.onSurface,
         fontWeight: "500",
     },
     menuRight: {
@@ -473,7 +472,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     badgeCircle: {
-        backgroundColor: "#e53935",
+        backgroundColor: colors.error,
         borderRadius: 10,
         width: 20,
         height: 20,
@@ -481,29 +480,29 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     badgeText: {
-        color: "#fff",
+        color: colors.onError,
         fontSize: 11,
         fontWeight: "700",
     },
     chevron: {
         fontSize: 22,
-        color: "#bbb",
+        color: colors.outline,
         marginTop: -1,
     },
 
     // Logout
     logoutBtn: {
-        backgroundColor: "#fafafa",
+        backgroundColor: colors.surfaceContainerLow,
         borderRadius: 14,
         paddingVertical: 16,
         alignItems: "center",
-        boxShadow: '0px 10px 20px rgba(0,0,0,0.1)'
+        boxShadow: '0px 10px 20px rgba(0,0,0,0.1)',
     },
     logoutText: {
-        color: "#e53935",
+        color: colors.error,
         fontWeight: "700",
         fontSize: 15,
-        letterSpacing: 1.2
+        letterSpacing: 1.2,
     },
 
     // Footer
@@ -514,14 +513,14 @@ const styles = StyleSheet.create({
     },
     footerApp: {
         fontSize: 11,
-        color: "#aaa",
+        color: colors.onSurfaceVariant,
         fontWeight: "600",
         letterSpacing: 1,
     },
     footerVersion: {
         fontSize: 12,
-        color: "#aaa",
-        letterSpacing: 1.1
+        color: colors.onSurfaceVariant,
+        letterSpacing: 1.1,
     },
     footerLinks: {
         flexDirection: "row",
@@ -530,13 +529,13 @@ const styles = StyleSheet.create({
     },
     footerLink: {
         fontSize: 12,
-        color: COLORS.primary,
+        color: colors.primary,
         textDecorationLine: "underline",
         fontWeight: "500",
     },
     footerSep: {
         fontSize: 12,
-        color: "#ccc",
+        color: colors.outlineVariant,
     },
 });
 

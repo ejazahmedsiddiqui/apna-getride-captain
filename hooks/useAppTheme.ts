@@ -1,4 +1,4 @@
-import { AppTheme, themes } from '../theme';
+import { AppTheme, themes } from '../theme/theme';
 import { useThemeStore } from '../store/themeStore';
 
 interface UseAppTheme {

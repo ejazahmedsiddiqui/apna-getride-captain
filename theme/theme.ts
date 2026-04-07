@@ -1,4 +1,4 @@
-import { Theme, DefaultTheme } from '@react-navigation/native';
+import {Theme, DefaultTheme} from '@react-navigation/native';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -71,13 +71,7 @@ export interface AppTheme extends Theme {
         full: number;
     };
     shadow: {
-        ambient: {
-            shadowColor: string;
-            shadowOffset: { width: number; height: number };
-            shadowOpacity: number;
-            shadowRadius: number;
-            elevation: number;
-        };
+        boxShadow: string;
     };
 }
 
@@ -126,7 +120,7 @@ const lightColors: AppColors = {
     surfaceContainerLow: '#F1F2FA',
     surfaceContainer: '#E8EAF6',
     surfaceContainerHigh: '#DDE0F0',
-    surfaceContainerHighest: '#D0D3E8',
+    surfaceContainerHighest: '#d0d3e8',
 
     // On-surface
     onSurface: '#1A1C2E',
@@ -152,7 +146,7 @@ const lightColors: AppColors = {
 const darkColors: AppColors = {
     // Primary
     primary: '#BBC3FF',
-    primaryContainer: '#1A237E',
+    primaryContainer: '#414dc3',
     onPrimary: '#000F6B',
     onPrimaryContainer: '#DDE1FF',
     primaryFixed: '#1E2578',
@@ -200,13 +194,9 @@ const darkColors: AppColors = {
 };
 
 const shadow = (mode: ThemeMode) => ({
-    ambient: {
-        shadowColor: mode === 'light' ? '#1A1C2E' : '#000000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
-        elevation: 8,
-    },
+
+    boxShadow: mode === 'light' ? '0px 10px 20px rgba(0, 0, 0, 0.15)' : '0px 10px 5px rgba(255, 255, 255, 0.1)'
+
 });
 
 export const lightTheme: AppTheme = {
