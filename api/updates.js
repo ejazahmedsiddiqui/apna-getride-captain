@@ -1,9 +1,8 @@
 import {BASE_URL} from "./index";
 import {storage, TOKEN_KEY} from "../storage/storage";
-import {existsMMKV} from "react-native-mmkv";
 
 export const updateVehicle = async (vehicle, image) => {
-    const hasStorage = existsMMKV("apna-getride-captain")
+    const hasStorage = storage.contains(TOKEN_KEY)
     if (!hasStorage) {
         return {success: false, errorMessage: "Authentication token data is required", errorStatus: 404};
     }

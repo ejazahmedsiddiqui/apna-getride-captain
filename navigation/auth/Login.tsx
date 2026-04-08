@@ -115,7 +115,7 @@ function LoginScreen() {
                     accessibilityLabel="Input your 10-digit phone number here"
                     maxLength={10}
                     inputType="phone"
-                    editable={step === 1}
+                    editable={step === 1 && !loading}
                 />
 
                 <View style={styles.passwordBlock}>
