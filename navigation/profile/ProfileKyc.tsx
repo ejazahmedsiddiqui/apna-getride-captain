@@ -4,14 +4,12 @@ import {
     Text,
     TouchableOpacity,
     StyleSheet,
-    Image,
     Alert,
     StatusBar,
     Dimensions,
 } from 'react-native';
 import {MaterialCommunityIcons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
 import RenderFormField from '../../components/RenderFormField';
 import Animated, {
     useSharedValue,
@@ -22,9 +20,12 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import LoadCard from '../../components/LoadCard';
 import {useAppTheme} from '../../hooks/useAppTheme';
 import {AppColors, AppTheme} from '../../theme';
+import LoadCard from '../../components/LoadCard';
+import DocTile from "../../components/DocTile";
+import SectionHeader from "../../components/SectionHeader";
+import pickImage from "../../utils/pickImage";
 
 type ThemeType = {
     theme: AppTheme;
@@ -53,117 +54,11 @@ interface KYCErrors {
     licenseExpiryDate: string;
 }
 
-const pickImage = async (fromCamera: boolean): Promise<string | null> => {
-    const permFn = fromCamera
-        ? ImagePicker.requestCameraPermissionsAsync
-        : ImagePicker.requestMediaLibraryPermissionsAsync;
-
-    const {status} = await permFn();
-    if (status !== 'granted') {
-        Alert.alert(
-            'Permission Required',
-            `Please allow ${fromCamera ? 'camera' : 'gallery'} access in your device settings.`,
-        );
-        return null;
-    }
-
-    const result = fromCamera
-        ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ['images'],
-            quality: 0.85,
-            allowsEditing: true,
-            aspect: [4, 3],
-        })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            quality: 0.85,
-            allowsEditing: true,
-            aspect: [4, 3],
-        });
-
-    if (!result.canceled && result.assets.length > 0) {
-        return result.assets[0].uri;
-    }
-    return null;
-};
-
-interface DocTileProps {
-    label: string;
-    icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-    uri: string | null;
-    onPick: (fromCamera: boolean) => void;
-    error?: string;
-    colors: AppColors;
-    docStyles: ReturnType<typeof createDocStyles>;
-}
-
-const DocTile: React.FC<DocTileProps> = ({label, icon, uri, onPick, error, colors, docStyles}) => {
-    const showPickerOptions = () => {
-        Alert.alert(label, 'Choose image source', [
-            {text: 'Camera', onPress: () => onPick(true)},
-            {text: 'Gallery', onPress: () => onPick(false)},
-            {text: 'Cancel', style: 'cancel'},
-        ]);
-    };
-
-    return (
-        <View style={docStyles.wrapper}>
-            <Text style={docStyles.metaLabel}>{label.toUpperCase()}</Text>
-            <TouchableOpacity
-                style={[docStyles.tile, error ? docStyles.tileError : null]}
-                onPress={showPickerOptions}
-                activeOpacity={0.8}
-                accessibilityLabel={`Upload ${label}`}
-            >
-                {uri ? (
-                    <>
-                        <Image source={{uri}} style={docStyles.preview} resizeMode="cover"/>
-                        <View style={docStyles.reuploadOverlay}>
-                            <MaterialCommunityIcons name="camera-retake-outline" size={22} color="#fff"/>
-                            <Text style={docStyles.reuploadText}>Replace</Text>
-                        </View>
-                    </>
-                ) : (
-                    <View style={docStyles.placeholder}>
-                        <View style={docStyles.iconRing}>
-                            <MaterialCommunityIcons name={icon} size={28} color={colors.primary}/>
-                        </View>
-                        <Text style={docStyles.placeholderTitle}>Upload Document</Text>
-                        <Text style={docStyles.placeholderSub}>Camera · JPG · JPEG</Text>
-                    </View>
-                )}
-            </TouchableOpacity>
-            {error ? <Text style={docStyles.errorText}>{error}</Text> : null}
-        </View>
-    );
-};
-
-interface SectionHeaderProps {
-    step: string;
-    title: string;
-    subtitle: string;
-    sectionStyles: ReturnType<typeof createSectionStyles>;
-}
-
-const SectionHeader: React.FC<SectionHeaderProps> = ({step, title, subtitle, sectionStyles}) => (
-    <View style={sectionStyles.row}>
-        <View style={sectionStyles.stepBadge}>
-            <Text style={sectionStyles.stepText}>{step}</Text>
-        </View>
-        <View style={{flex: 1}}>
-            <Text style={sectionStyles.title}>{title}</Text>
-            <Text style={sectionStyles.subtitle}>{subtitle}</Text>
-        </View>
-    </View>
-);
-
 const KYCScreen = () => {
     const {theme, isDark} = useAppTheme();
     const {colors, shadow} = theme;
 
     const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
-    const docStyles = useMemo(() => createDocStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
-    const sectionStyles = useMemo(() => createSectionStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
 
     const [form, setForm] = useState<KYCFormState>({
         aadhaarNumber: '',
@@ -339,7 +234,6 @@ const KYCScreen = () => {
                                 step="01"
                                 title="Identity Numbers"
                                 subtitle="Enter your government-issued ID numbers exactly as printed."
-                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.fieldGroup}>
                                 <RenderFormField
@@ -401,7 +295,6 @@ const KYCScreen = () => {
                                 step="02"
                                 title="Driving License"
                                 subtitle="Must be a valid, non-expired commercial driving license."
-                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.fieldGroup}>
                                 <RenderFormField
@@ -462,7 +355,6 @@ const KYCScreen = () => {
                                 step="03"
                                 title="Aadhaar Card Photos"
                                 subtitle="Upload clear photos of both sides. Avoid glare and blur."
-                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.docRow}>
                                 <DocTile
@@ -471,8 +363,6 @@ const KYCScreen = () => {
                                     uri={images.aadhaarFront}
                                     onPick={handleImagePick('aadhaarFront')}
                                     error={docErrors.aadhaarFront}
-                                    colors={colors}
-                                    docStyles={docStyles}
                                 />
                                 <DocTile
                                     label="Aadhaar Back"
@@ -480,8 +370,6 @@ const KYCScreen = () => {
                                     uri={images.aadhaarBack}
                                     onPick={handleImagePick('aadhaarBack')}
                                     error={docErrors.aadhaarBack}
-                                    colors={colors}
-                                    docStyles={docStyles}
                                 />
                             </View>
                         </View>
@@ -491,7 +379,6 @@ const KYCScreen = () => {
                                 step="04"
                                 title="PAN & License Photos"
                                 subtitle="All four corners must be visible. JPG or JPEG only."
-                                sectionStyles={sectionStyles}
                             />
                             <View style={styles.docRow}>
                                 <DocTile
@@ -500,8 +387,7 @@ const KYCScreen = () => {
                                     uri={images.pan}
                                     onPick={handleImagePick('pan')}
                                     error={docErrors.pan}
-                                    colors={colors}
-                                    docStyles={docStyles}
+
                                 />
                                 <DocTile
                                     label="Driving License"
@@ -509,8 +395,7 @@ const KYCScreen = () => {
                                     uri={images.license}
                                     onPick={handleImagePick('license')}
                                     error={docErrors.license}
-                                    colors={colors}
-                                    docStyles={docStyles}
+
                                 />
                             </View>
                         </View>
@@ -663,120 +548,5 @@ const createStyles = ({colors, shadow}: ThemeType) => StyleSheet.create({
         fontWeight: '700',
         color: colors.onPrimary,
         letterSpacing: 0.3,
-    },
-});
-
-const createDocStyles = ({ colors }: ThemeType) => StyleSheet.create({
-    wrapper: {
-        flex: 1,
-    },
-    metaLabel: {
-        fontFamily: 'Inter',
-        fontSize: 9.5,
-        fontWeight: '700',
-        letterSpacing: 1.8,
-        color: colors.onSurfaceVariant,
-        marginBottom: 6,
-    },
-    tile: {
-        height: 130,
-        backgroundColor: colors.surfaceContainerLow,
-        borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: colors.outline,
-        borderStyle: 'dashed',
-    },
-    tileError: {
-        borderColor: colors.error,
-        backgroundColor: colors.errorContainer,
-    },
-    preview: {
-        width: '100%',
-        height: '100%',
-    },
-    reuploadOverlay: {
-        ...StyleSheet.absoluteFill,
-        backgroundColor: 'rgba(0,6,102,0.45)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-    },
-    reuploadText: {
-        fontFamily: 'Inter',
-        fontSize: 11,
-        fontWeight: '600',
-        color: colors.onPrimary,
-    },
-    placeholder: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        padding: 10,
-    },
-    iconRing: {
-        backgroundColor: colors.primaryFixed,
-        borderRadius: 50,
-        padding: 10,
-        marginBottom: 2,
-    },
-    placeholderTitle: {
-        fontFamily: 'Inter',
-        fontSize: 11,
-        fontWeight: '600',
-        color: colors.primary,
-        textAlign: 'center',
-    },
-    placeholderSub: {
-        fontFamily: 'Inter',
-        fontSize: 9.5,
-        color: colors.onSurfaceVariant,
-        letterSpacing: 0.5,
-        textAlign: 'center',
-    },
-    errorText: {
-        fontFamily: 'Inter',
-        fontSize: 11,
-        fontWeight: '500',
-        color: colors.error,
-        marginTop: 5,
-        paddingHorizontal: 2,
-    },
-});
-
-const createSectionStyles = ({ colors }: ThemeType) => StyleSheet.create({
-    row: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 14,
-    },
-    stepBadge: {
-        backgroundColor: colors.primary,
-        borderRadius: 8,
-        paddingHorizontal: 9,
-        paddingVertical: 5,
-        marginTop: 2,
-    },
-    stepText: {
-        fontFamily: 'Manrope',
-        fontSize: 11,
-        fontWeight: '800',
-        color: colors.secondaryContainer,
-        letterSpacing: 1,
-    },
-    title: {
-        fontFamily: 'Manrope',
-        fontSize: 17,
-        fontWeight: '800',
-        color: colors.primary,
-        letterSpacing: -0.2,
-        marginBottom: 3,
-    },
-    subtitle: {
-        fontFamily: 'Inter',
-        fontSize: 12,
-        color: colors.onSurfaceVariant,
-        lineHeight: 17,
     },
 });

@@ -45,6 +45,7 @@ const VEHICLE_IMAGE_MAP: Record<string, ReturnType<typeof require>> = {
     splendor: require('../../assets/vehicles/splendor.webp'),
     activa: require('../../assets/vehicles/activa.png'),
     auto: require('../../assets/vehicles/auto-rickshaw.png'),
+    hyundai: require('../../assets/vehicles/auto-rickshaw.png')
 };
 
 function getVehicleImage(model: string | undefined) {

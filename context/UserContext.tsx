@@ -5,13 +5,9 @@ import React, {
     useEffect,
     useState,
 } from "react";
-import { createMMKV } from "react-native-mmkv";
 import { getUserProfile } from "../api/auth";
 import { Alert } from "react-native";
-
-export const storage = createMMKV({ id: "apna-getride-captain" });
-export const TOKEN_KEY = "access_token";
-
+import {storage, TOKEN_KEY} from "../storage/storage";
 export type UserProfile = {
     _id: string;
     fullName: string;
@@ -31,16 +27,16 @@ export type UserProfile = {
 };
 
 type UserContextType = {
-    token: string | null;
     user: UserProfile | null;
     isAuthenticated: boolean;
     isLoadingProfile: boolean;
     setTokenAndFetchProfile: (token: string) => Promise<void>;
+    fetchProfile: () => Promise<void>;
     logout: () => void;
 };
 const UserContext = createContext<UserContextType | null>(null);
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
+function UserProvider({ children }: { children: React.ReactNode }) {
     const initialToken = storage.getString(TOKEN_KEY) ?? null;
     const [token, setToken] = useState<string | null>(initialToken);
     const [user, setUser] = useState<UserProfile | null>(null);
@@ -53,6 +49,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             logout
         }
     }, [token, isAuthenticated]);
+    useEffect(() => {
+        if(token){
+            console.log('Authentication state vs !!token is: ', isAuthenticated, !!token)
+        }
+    }, [token, isAuthenticated]);
     const fetchProfile = useCallback(async () => {
         setIsLoadingProfile(true);
         if (!token) {
@@ -61,7 +62,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             return;
         }
         const result = await getUserProfile(token);
-        console.log('token: ', token);
         if (result.success && !result.data) {
             console.error('An error occurred - no data was found.');
             Alert.alert('ERROR', 'NO DATA CAME FROM SERVER.')
@@ -75,12 +75,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (token) {
+            console.log('Token is: ',token)
             fetchProfile();
         }
     }, [token, fetchProfile]);
 
     const setTokenAndFetchProfile = useCallback(async (newToken: string) => {
         storage.set(TOKEN_KEY, newToken);
+        storage.encrypt(TOKEN_KEY, 'AES-256');
         setToken(newToken);
     }, []);
 
@@ -92,12 +94,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <UserContext.Provider
-            value={{ isAuthenticated, token, user, isLoadingProfile, setTokenAndFetchProfile, logout }}
+            value={{ isAuthenticated, user, isLoadingProfile, setTokenAndFetchProfile, logout, fetchProfile }}
         >
             {children}
         </UserContext.Provider>
     );
 }
+
+export default UserProvider
 
 export function useUserContext() {
     const ctx = useContext(UserContext);

@@ -53,7 +53,6 @@ export const getUserProfile = async (token) => {
         if (!response.ok) {
             return { success: false, errorMessage: data.message, errorStatus: response.status };
         }
-        console.log('Data is: ', data)
         return { success: true, data: data };
     } catch (error) {
         console.log(error);

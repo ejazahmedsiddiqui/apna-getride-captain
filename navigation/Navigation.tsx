@@ -11,8 +11,8 @@ import VehicleInfoScreen from "./profile/VehicleInfo";
 import VehicleKYCScreen from "./profile/VehicleKyc";
 
 function useIsAuthenticated() {
-    const {token} = useUserContext();
-    return !!token;
+    const {isAuthenticated} = useUserContext();
+    return isAuthenticated;
 }
 
 const RootStack = createNativeStackNavigator({
