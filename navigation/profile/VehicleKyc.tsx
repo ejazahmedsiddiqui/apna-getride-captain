@@ -379,7 +379,6 @@ const createStyles = ({colors, shadow}: ThemeType) => StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingTop: 20,
         gap: 16,
     },
     card: {

@@ -272,7 +272,7 @@ function ProfileScreen() {
                         <TouchableOpacity
                             accessibilityRole="button"
                             accessibilityLabel="Check KYC"
-                            onPress={() => navigation.navigate('Kyc')}
+                            onPress={() => navigation.navigate('VehicleKYC')}
                         >
                             <Text style={styles.footerLink}>check your KYC here</Text>
                         </TouchableOpacity>

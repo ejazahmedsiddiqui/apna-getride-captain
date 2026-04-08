@@ -245,7 +245,7 @@ const KYCScreen = () => {
                                     maxLength={12}
                                     labelColor={colors.primaryContainer}
                                     labelColorActive={colors.primary}
-                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorInactive={colors.outline}
                                     borderColorActive={colors.primary}
                                     textColor={colors.onSurface}
                                     placeholderTextColor={colors.onSurfaceVariant}
@@ -256,7 +256,6 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="card-account-details-outline"
                                             size={20}
-                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="Aadhaar Number input"
@@ -271,7 +270,7 @@ const KYCScreen = () => {
                                     autoCapitalize="characters"
                                     labelColor={colors.primaryContainer}
                                     labelColorActive={colors.primary}
-                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorInactive={colors.outline}
                                     borderColorActive={colors.primary}
                                     textColor={colors.onSurface}
                                     placeholderTextColor={colors.onSurfaceVariant}
@@ -282,7 +281,6 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="identifier"
                                             size={20}
-                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="PAN Number input"
@@ -306,7 +304,7 @@ const KYCScreen = () => {
                                     autoCapitalize="characters"
                                     labelColor={colors.primaryContainer}
                                     labelColorActive={colors.primary}
-                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorInactive={colors.outline}
                                     borderColorActive={colors.primary}
                                     textColor={colors.onSurface}
                                     placeholderTextColor={colors.onSurfaceVariant}
@@ -317,7 +315,6 @@ const KYCScreen = () => {
                                         <MaterialCommunityIcons
                                             name="card-bulleted-outline"
                                             size={20}
-                                            color={colors.onSurfaceVariant}
                                         />
                                     }
                                     accessibilityLabel="Driving License Number input"
@@ -331,7 +328,7 @@ const KYCScreen = () => {
                                     maxLength={10}
                                     labelColor={colors.primaryContainer}
                                     labelColorActive={colors.primary}
-                                    borderColorInactive={colors.surfaceContainerHighest}
+                                    borderColorInactive={colors.outline}
                                     borderColorActive={colors.primary}
                                     textColor={colors.onSurface}
                                     placeholderTextColor={colors.onSurfaceVariant}
