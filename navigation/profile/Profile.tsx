@@ -11,8 +11,8 @@ import {SafeAreaView} from "react-native-safe-area-context";
 import {
     User,
     CarTaxiFront,
-    CreditCard,
     Star,
+    BookCheck,
     TicketPercent,
     ShieldPlus,
     MessageCircleQuestionMark,
@@ -63,7 +63,7 @@ const MenuItem = React.memo(({Icon, label, badge, colors, styles, onPress}: Menu
 });
 
 function ProfileScreen() {
-    const {user, logout, isLoadingProfile} = useUserContext();
+    const {user, logout, isLoadingProfile, fetchProfile} = useUserContext();
     const navigation = useNavigation();
 
     const [enabled, setEnabled] = useState(false);
@@ -72,8 +72,8 @@ function ProfileScreen() {
 
     const {theme, toggle: toggleTheme, isDark} = useAppTheme();
     const {colors, shadow} = theme;
-    const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark]);
-
+    const styles = useMemo(() => createStyles({theme, colors, isDark, shadow}), [theme, colors, isDark])
+    console.log('@/nav/profile/Profile - User Details is: ', user);
     if (isLoadingProfile) {
         return <ProfileSkeleton/>;
     }
@@ -204,10 +204,21 @@ function ProfileScreen() {
                                 </View>
                             </TouchableOpacity>
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={CarTaxiFront} label="Vehicle Information" colors={colors} styles={styles}
-                                      onPress={() => navigation.navigate('VehicleInfo')}/>
+                            {user?.vehicle &&
+                                <MenuItem
+                                    Icon={CarTaxiFront}
+                                    label="Vehicle Information"
+                                    colors={colors}
+                                    styles={styles}
+                                    onPress={() => navigation.navigate('VehicleInfo')}
+                                />}
                             <View style={styles.menuDivider}/>
-                            <MenuItem Icon={CreditCard} label="Payment Methods" colors={colors} styles={styles} onPress={() => navigation.navigate('VehicleKYC')}/>
+                            {!user?.vehicle && <MenuItem
+                                Icon={BookCheck}
+                                label="Complete Vehicle KYC"
+                                colors={colors} styles={styles}
+                                onPress={() => navigation.navigate('VehicleKYC')}
+                            />}
                             <View style={styles.menuDivider}/>
                             <MenuItem Icon={TicketPercent} label="Promotions" badge={2} colors={colors}
                                       styles={styles}/>
@@ -234,6 +245,15 @@ function ProfileScreen() {
                         onPress={logout}
                     >
                         <Text style={styles.logoutText}>Logout</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.logoutBtn}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Logout Button"
+                        onPress={fetchProfile}
+                    >
+                        <Text style={[styles.logoutText, {color: colors.text}]}>Re-login</Text>
                     </TouchableOpacity>
 
                     {/* Footer Info */}

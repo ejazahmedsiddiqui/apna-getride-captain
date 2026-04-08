@@ -46,19 +46,14 @@ function UserProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (!token && isAuthenticated) {
-            logout
-        }
-    }, [token, isAuthenticated]);
-    useEffect(() => {
-        if(token){
-            console.log('Authentication state vs !!token is: ', isAuthenticated, !!token)
+            logout()
         }
     }, [token, isAuthenticated]);
     const fetchProfile = useCallback(async () => {
         setIsLoadingProfile(true);
         if (!token) {
             setIsLoadingProfile(false);
-            logout
+            logout()
             return;
         }
         const result = await getUserProfile(token);
@@ -75,14 +70,12 @@ function UserProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (token) {
-            console.log('Token is: ',token)
             fetchProfile();
         }
     }, [token, fetchProfile]);
 
     const setTokenAndFetchProfile = useCallback(async (newToken: string) => {
         storage.set(TOKEN_KEY, newToken);
-        storage.encrypt(TOKEN_KEY, 'AES-256');
         setToken(newToken);
     }, []);
 
