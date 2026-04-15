@@ -106,8 +106,8 @@ This flow is designed to be **extensible for real-time sockets and scaling**.
 
 > Add a short demo video or screenshots here:
 - Demo Video of Prject so far: [youtube](https://youtube.com/shorts/0UeTYNC3uyo?feature=share)
-- Login Page <img width="1080" height="2400" alt="Login Page" src="https://github.com/user-attachments/assets/3bb59e3f-d957-493b-a1e1-66fd7e360c2b" />
-- Profile loading page <img width="1080" height="2400" alt="Profile - Loading state" src="https://github.com/user-attachments/assets/ffebde99-f4f4-4d19-8fb9-239e50f5421c" />
+- Login Page <img width="420" height="915" alt="Login Page" src="https://github.com/user-attachments/assets/3bb59e3f-d957-493b-a1e1-66fd7e360c2b" />
+- Profile loading page <img width="420" height="915" alt="Profile - Loading state" src="https://github.com/user-attachments/assets/ffebde99-f4f4-4d19-8fb9-239e50f5421c" />
 - Profile Page 1: <img width="420" height="915" alt="Profile Loaded" src="https://github.com/user-attachments/assets/7a176ec1-7e71-440f-8c2d-ba993dad3eae" />
 - Profile Page 2: <img width="420" height="915" alt="Profile 2" src="https://github.com/user-attachments/assets/4b882bd1-da19-42d5-a2a0-3158f345dd19" />
 - KYC page 1: <img width="420" height="915" alt="KYC page 1" src="https://github.com/user-attachments/assets/3cb6d2e0-d692-4725-ba27-e5b10d5a6b1c" />
